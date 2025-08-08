@@ -1,0 +1,58 @@
+# Docker Compose for Terragrunt Infrastructure Diagram Generation
+# 
+# Services:
+#   blast-radius:     Interactive web server for real-time diagram exploration
+#   diagram-generator: Batch processing service for automated diagram generation
+#
+# Usage:
+#   docker-compose up blast-radius                           # Start interactive server
+#   docker-compose run diagram-generator generate-all        # Generate all diagrams
+#   docker-compose run diagram-generator serve dev eu-central-2 # Interactive for specific env
+
+version: '3.8'
+
+services:
+  # Interactive blast-radius server for development
+  blast-radius:
+    image: 28mm/blast-radius:latest
+    ports:
+      - "5000:5000"
+    volumes:
+      - .:/workdir
+      - ./diagrams:/output
+    working_dir: /workdir
+    environment:
+      - AWS_REGION=eu-central-2
+      - ENVIRONMENT=dev
+    command: ["blast-radius", "--serve", "--port", "5000"]
+    profiles:
+      - interactive
+
+  # Batch diagram generation service
+  diagram-generator:
+    build:
+      context: .
+      dockerfile: Dockerfile.diagrams
+    volumes:
+      - .:/workdir
+      - ./diagrams:/output
+    working_dir: /workdir
+    environment:
+      - AWS_REGION=eu-central-2
+      - ENVIRONMENT=dev
+    profiles:
+      - generate
+
+  # Advanced diagram generator with Python
+  diagram-advanced:
+    build:
+      context: .
+      dockerfile: Dockerfile.advanced
+    volumes:
+      - .:/workdir
+      - ./diagrams:/output
+    working_dir: /workdir
+    environment:
+      - PYTHONPATH=/workdir
+    profiles:
+      - advanced

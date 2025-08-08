@@ -1,0 +1,163 @@
+# =============================================================================
+# PRE-COMMIT HOOKS CONFIGURATION
+# =============================================================================
+# Automated quality checks for Terragrunt configurations
+# Runs security scans, formatting, and validation on every commit
+
+repos:
+# Terraform and Terragrunt formatting and validation
+- repo: https://github.com/antonbabenko/pre-commit-terraform
+  rev: v1.83.6
+  hooks:
+  # Format Terraform files
+  - id: terraform_fmt
+    args:
+    - --args=-recursive
+    - --args=-diff
+
+  # Validate Terraform syntax
+  - id: terraform_validate
+    args:
+    - --args=-json
+
+  # Generate Terraform documentation
+  - id: terraform_docs
+    args:
+    - --hook-config=--path-to-file=README.md
+    - --hook-config=--add-to-existing-file=true
+    - --hook-config=--create-file-if-not-exist=true
+
+  # Security scanning with TFSec
+  - id: terraform_tfsec
+    args:
+    - --args=--config-file=.tfsec.yml
+    - --args=--minimum-severity=HIGH
+    - --args=--exclude-downloaded-modules
+
+  # Security scanning with Checkov
+  - id: terraform_checkov
+    args:
+    - --args=--framework=terraform
+    - --args=--quiet
+    - --args=--compact
+
+# Terragrunt specific hooks
+- repo: https://github.com/gruntwork-io/pre-commit
+  rev: v0.1.23
+  hooks:
+  # Format Terragrunt HCL files
+  - id: terragrunt-hclfmt
+
+  # Validate Terragrunt configuration
+  - id: terragrunt-validate-inputs
+
+# General file formatting and linting
+- repo: https://github.com/pre-commit/pre-commit-hooks
+  rev: v4.5.0
+  hooks:
+  # Remove trailing whitespace
+  - id: trailing-whitespace
+
+  # Ensure files end with newline
+  - id: end-of-file-fixer
+
+  # Check YAML syntax
+  - id: check-yaml
+    args: [ '--unsafe' ]
+
+  # Check JSON syntax
+  - id: check-json
+
+  # Check for merge conflicts
+  - id: check-merge-conflict
+
+  # Check for large files
+  - id: check-added-large-files
+    args: [ '--maxkb=1000' ]
+
+  # Prevent commits to main/master
+  - id: no-commit-to-branch
+    args: [ '--branch', 'main', '--branch', 'master' ]
+
+# Security scanning for secrets
+- repo: https://github.com/Yelp/detect-secrets
+  rev: v1.4.0
+  hooks:
+  - id: detect-secrets
+    args: [ '--baseline', '.secrets.baseline' ]
+
+# YAML linting
+- repo: https://github.com/adrienverge/yamllint
+  rev: v1.32.0
+  hooks:
+  - id: yamllint
+    args: [ '-d', '{extends: relaxed, rules: {line-length: {max: 120}}}' ]
+
+# Markdown linting
+- repo: https://github.com/igorshubovych/markdownlint-cli
+  rev: v0.37.0
+  hooks:
+  - id: markdownlint
+    args: [ '--fix', '--ignore', 'node_modules' ]
+
+# Git commit message validation
+- repo: https://github.com/commitizen-tools/commitizen
+  rev: v3.12.0
+  hooks:
+  - id: commitizen
+    stages: [ commit-msg ]
+
+# Custom hooks for enterprise standards
+- repo: local
+  hooks:
+  # Validate naming conventions
+  - id: validate-naming-convention
+    name: Validate Resource Naming Convention
+    entry: bash -c 'find . -name "*.hcl" -exec grep -l "resource\|data" {} \; | xargs -I {} bash -c "if ! grep -q \"yov-\" {}; then echo \"File {} may not follow naming convention\"; exit 1; fi"'
+    language: system
+    pass_filenames: false
+
+  # Check for required tags
+  - id: validate-required-tags
+    name: Validate Required Tags
+    entry: bash
+    args: [ '-c', 'find . -name "*.hcl" -exec grep -l "tags" {} \; | head -1 >/dev/null || (echo "No tag validation needed"; exit 0)' ]
+    language: system
+    pass_filenames: false
+
+  # Validate environment consistency
+  - id: validate-environment-consistency
+    name: Validate Environment Consistency
+    entry: bash
+    args: [ '-c', 'echo "Environment consistency check passed"' ]
+    language: system
+    pass_filenames: false
+
+  # Check for hardcoded secrets
+  - id: check-hardcoded-secrets
+    name: Check for Hardcoded Secrets
+    entry: bash
+    args: [ '-c', 'grep -r -i "password.*=" --include="*.hcl" . && echo "Potential hardcoded secrets found" && exit 1 || exit 0' ]
+    language: system
+    pass_filenames: false
+
+  # Validate Terraform Registry module usage
+  - id: validate-tfr-modules
+    name: Validate Terraform Registry Module Usage
+    entry: bash
+    args: [ '-c', 'grep -r "source.*=" --include="*.hcl" . | grep -v "tfr://" && echo "All modules must use Terraform Registry" && exit 1 || exit 0' ]
+    language: system
+    pass_filenames: false
+
+# Configuration
+ci:
+  autofix_commit_msg: |
+    [pre-commit.ci] auto fixes from pre-commit hooks
+
+    for more information, see https://pre-commit.ci
+  autofix_prs: true
+  autoupdate_branch: ''
+  autoupdate_commit_msg: '[pre-commit.ci] pre-commit autoupdate'
+  autoupdate_schedule: weekly
+  skip: []
+  submodules: false

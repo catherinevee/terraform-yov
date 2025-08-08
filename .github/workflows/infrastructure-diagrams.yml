@@ -1,0 +1,455 @@
+name: Generate Infrastructure Diagrams
+
+on:
+  push:
+    branches: [ main, develop ]
+    paths:
+      - 'aws/**/*.hcl'
+      - 'aws/**/*.tf'
+      - 'aws/**/*.tfvars'
+      - '_envcommon/**/*.hcl'
+      - 'root.hcl'
+      - '.github/workflows/infrastructure-diagrams.yml'
+  pull_request:
+    branches: [ main ]
+    paths:
+      - 'aws/**/*.hcl'
+      - 'aws/**/*.tf'
+      - 'aws/**/*.tfvars'
+      - '_envcommon/**/*.hcl'
+      - 'root.hcl'
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Environment to generate diagram for (leave empty for all)'
+        required: false
+        type: choice
+        options:
+          - 'all'
+          - 'dev'
+          - 'staging'
+          - 'prod'
+      region:
+        description: 'AWS Region'
+        required: false
+        type: choice
+        options:
+          - 'all'
+          - 'eu-central-2'
+          - 'eu-west-1'
+          - 'us-east-1'
+
+env:
+  TF_VERSION: '1.5.7'
+  TERRAGRUNT_VERSION: '0.53.0'
+
+jobs:
+  discover-environments:
+    name: Discover Terragrunt Environments
+    runs-on: ubuntu-latest
+    outputs:
+      environments: ${{ steps.discover.outputs.environments }}
+      matrix: ${{ steps.discover.outputs.matrix }}
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      
+    - name: Discover environments
+      id: discover
+      run: |
+        environments=()
+        matrix_entries=()
+        
+        # Find all aws/region/environment combinations
+        for region_dir in aws/*/; do
+          if [ -d "$region_dir" ]; then
+            region=$(basename "$region_dir")
+            
+            for env_dir in "$region_dir"*/; do
+              if [ -d "$env_dir" ]; then
+                environment=$(basename "$env_dir")
+                env_path="aws/$region/$environment"
+                
+                # Check if this directory contains Terragrunt or Terraform files
+                if find "$env_dir" -name "*.hcl" -o -name "*.tf" | grep -q .; then
+                  env_name="$environment-$region"
+                  environments+=("$env_name")
+                  matrix_entries+=("{\"path\":\"$env_path\",\"name\":\"$env_name\",\"environment\":\"$environment\",\"region\":\"$region\"}")
+                fi
+              fi
+            done
+          fi
+        done
+        
+        # Create JSON array for matrix
+        if [ ${#matrix_entries[@]} -gt 0 ]; then
+          matrix_json="[$(IFS=','; echo "${matrix_entries[*]}")]"
+        else
+          matrix_json="[]"
+        fi
+        
+        echo "environments=$(IFS=','; echo "${environments[*]}")" >> $GITHUB_OUTPUT
+        echo "matrix=$matrix_json" >> $GITHUB_OUTPUT
+        
+        echo "Discovered environments:"
+        echo "$matrix_json" | jq -r '.[] | "  - \(.name) (\(.path))"'
+
+  generate-diagrams:
+    name: Generate Infrastructure Diagrams
+    runs-on: ubuntu-latest
+    needs: discover-environments
+    if: needs.discover-environments.outputs.matrix != '[]'
+    
+    strategy:
+      fail-fast: false
+      matrix:
+        include: ${{ fromJson(needs.discover-environments.outputs.matrix) }}
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      with:
+        token: ${{ secrets.GITHUB_TOKEN }}
+        fetch-depth: 0
+    
+    - name: Setup Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.10'
+        cache: 'pip'
+    
+    - name: Install Graphviz
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y graphviz
+    
+    - name: Install blast-radius and dependencies
+      run: |
+        pip install blastradius terraform-visual
+    
+    - name: Setup Terraform
+      uses: hashicorp/setup-terraform@v3
+      with:
+        terraform_version: ${{ env.TF_VERSION }}
+        terraform_wrapper: false
+    
+    - name: Setup Terragrunt
+      run: |
+        wget -O terragrunt https://github.com/gruntwork-io/terragrunt/releases/download/v${{ env.TERRAGRUNT_VERSION }}/terragrunt_linux_amd64
+        chmod +x terragrunt
+        sudo mv terragrunt /usr/local/bin/
+    
+    - name: Check if environment exists
+      id: check-env
+      run: |
+        if [ -d "${{ matrix.path }}" ]; then
+          echo "exists=true" >> $GITHUB_OUTPUT
+          echo "Environment ${{ matrix.path }} exists"
+        else
+          echo "exists=false" >> $GITHUB_OUTPUT
+          echo "Environment ${{ matrix.path }} does not exist, skipping..."
+        fi
+    
+    - name: Initialize Terragrunt
+      if: steps.check-env.outputs.exists == 'true'
+      working-directory: ${{ matrix.path }}
+      run: |
+        echo "Initializing Terragrunt for ${{ matrix.name }}..."
+        export AWS_REGION=${{ matrix.region }}
+        export ENVIRONMENT=${{ matrix.environment }}
+        terragrunt init --terragrunt-non-interactive || {
+          echo "Terragrunt init failed, trying terraform init..."
+          terraform init -backend=false
+        }
+      continue-on-error: true
+    
+    - name: Create Terragrunt Plan
+      if: steps.check-env.outputs.exists == 'true'
+      working-directory: ${{ matrix.path }}
+      run: |
+        echo "Creating plan for ${{ matrix.name }}..."
+        export AWS_REGION=${{ matrix.region }}
+        export ENVIRONMENT=${{ matrix.environment }}
+        terragrunt plan -out=tfplan --terragrunt-non-interactive || {
+          echo "Terragrunt plan failed, trying terraform plan..."
+          terraform plan -out=tfplan || echo "Plan failed, continuing with existing state..."
+        }
+      continue-on-error: true
+    
+    - name: Generate infrastructure diagram
+      if: steps.check-env.outputs.exists == 'true'
+      working-directory: ${{ matrix.path }}
+      run: |
+        echo "Generating diagram for ${{ matrix.name }}..."
+        mkdir -p ../../diagrams
+        
+        # Generate SVG diagram
+        if blast-radius --svg > ../../diagrams/${{ matrix.name }}.svg 2>/dev/null; then
+          echo "Successfully generated SVG diagram"
+        else
+          echo "Failed to generate SVG diagram, creating placeholder"
+          cat > ../../diagrams/${{ matrix.name }}.svg << 'EOF'
+        <svg xmlns="http://www.w3.org/2000/svg" width="500" height="250" viewBox="0 0 500 250">
+          <rect width="500" height="250" fill="#f8f9fa" stroke="#dee2e6" stroke-width="2"/>
+          <text x="250" y="120" text-anchor="middle" font-family="Arial, sans-serif" font-size="16" fill="#6c757d">
+            Diagram generation failed for ${{ matrix.name }}
+          </text>
+          <text x="250" y="145" text-anchor="middle" font-family="Arial, sans-serif" font-size="12" fill="#6c757d">
+            Environment: ${{ matrix.environment }} | Region: ${{ matrix.region }}
+          </text>
+          <text x="250" y="165" text-anchor="middle" font-family="Arial, sans-serif" font-size="12" fill="#6c757d">
+            Check workflow logs for details
+          </text>
+        </svg>
+        EOF
+        fi
+        
+        # Generate DOT file for debugging
+        blast-radius --dot > ../../diagrams/${{ matrix.name }}.dot 2>/dev/null || echo "Failed to generate DOT file"
+        
+        # Clean up
+        rm -f tfplan
+    
+    - name: Upload diagrams as artifacts
+      if: steps.check-env.outputs.exists == 'true'
+      uses: actions/upload-artifact@v3
+      with:
+        name: infrastructure-diagrams-${{ matrix.name }}
+        path: |
+          diagrams/${{ matrix.name }}.svg
+          diagrams/${{ matrix.name }}.dot
+        retention-days: 30
+
+  commit-diagrams:
+    name: Commit Updated Diagrams
+    runs-on: ubuntu-latest
+    needs: [discover-environments, generate-diagrams]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main' && needs.discover-environments.outputs.matrix != '[]'
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      with:
+        token: ${{ secrets.GITHUB_TOKEN }}
+        fetch-depth: 0
+    
+    - name: Download all diagram artifacts
+      uses: actions/download-artifact@v3
+      with:
+        path: artifacts
+    
+    - name: Move diagrams to correct location
+      run: |
+        mkdir -p diagrams
+        find artifacts -name "*.svg" -exec cp {} diagrams/ \;
+        find artifacts -name "*.dot" -exec cp {} diagrams/ \;
+        ls -la diagrams/
+    
+    - name: Generate diagram index
+      run: |
+        cat > diagrams/index.html << 'EOF'
+        <!DOCTYPE html>
+        <html lang="en">
+        <head>
+            <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <title>YOV Infrastructure Diagrams</title>
+            <style>
+                body { 
+                    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+                    margin: 0; 
+                    padding: 20px; 
+                    background-color: #f8f9fa; 
+                    line-height: 1.6;
+                }
+                .container { 
+                    max-width: 1200px; 
+                    margin: 0 auto; 
+                    background: white; 
+                    padding: 30px; 
+                    border-radius: 10px; 
+                    box-shadow: 0 4px 20px rgba(0,0,0,0.1); 
+                }
+                h1 { 
+                    color: #2c3e50; 
+                    text-align: center; 
+                    margin-bottom: 10px;
+                    font-size: 2.5em;
+                }
+                .subtitle {
+                    text-align: center;
+                    color: #7f8c8d;
+                    font-size: 1.1em;
+                    margin-bottom: 30px;
+                }
+                .diagram-grid { 
+                    display: grid; 
+                    grid-template-columns: repeat(auto-fit, minmax(350px, 1fr)); 
+                    gap: 25px; 
+                    margin: 30px 0; 
+                }
+                .diagram-card { 
+                    border: 1px solid #e1e8ed; 
+                    border-radius: 10px; 
+                    padding: 20px; 
+                    background: #fafbfc; 
+                    transition: transform 0.2s, box-shadow 0.2s;
+                }
+                .diagram-card:hover {
+                    transform: translateY(-2px);
+                    box-shadow: 0 6px 25px rgba(0,0,0,0.15);
+                }
+                .diagram-card h3 { 
+                    margin-top: 0; 
+                    margin-bottom: 15px;
+                    color: #2c3e50; 
+                    font-size: 1.3em;
+                }
+                .diagram-preview { 
+                    text-align: center; 
+                    margin: 15px 0; 
+                }
+                .diagram-preview img { 
+                    max-width: 100%; 
+                    height: auto; 
+                    border: 1px solid #d1d9e0; 
+                    border-radius: 5px;
+                    transition: transform 0.2s;
+                }
+                .diagram-preview img:hover {
+                    transform: scale(1.02);
+                }
+                .view-link {
+                    display: inline-block;
+                    padding: 8px 16px;
+                    background: #3498db;
+                    color: white;
+                    text-decoration: none;
+                    border-radius: 5px;
+                    transition: background 0.2s;
+                }
+                .view-link:hover {
+                    background: #2980b9;
+                }
+                .timestamp { 
+                    color: #95a5a6; 
+                    font-size: 0.9em; 
+                    text-align: center; 
+                    margin-top: 30px; 
+                    padding-top: 20px;
+                    border-top: 1px solid #ecf0f1;
+                }
+                .env-dev { border-left: 5px solid #3498db; }
+                .env-staging { border-left: 5px solid #f39c12; }
+                .env-prod { border-left: 5px solid #e74c3c; }
+                .stats {
+                    background: #ecf0f1;
+                    padding: 15px;
+                    border-radius: 5px;
+                    margin-bottom: 20px;
+                    text-align: center;
+                }
+            </style>
+        </head>
+        <body>
+            <div class="container">
+                <h1>YOV Infrastructure Diagrams</h1>
+                <div class="subtitle">Enterprise Terragrunt infrastructure visualizations across multiple regions</div>
+        EOF
+        
+        # Count diagrams and add stats
+        diagram_count=$(ls diagrams/*.svg 2>/dev/null | wc -l)
+        echo "                <div class='stats'>Total Infrastructure Environments: $diagram_count</div>" >> diagrams/index.html
+        echo "                <div class='diagram-grid'>" >> diagrams/index.html
+        
+        # Add each diagram to the index
+        for svg in diagrams/*.svg; do
+            if [ -f "$svg" ]; then
+                filename=$(basename "$svg")
+                name=${filename%.svg}
+                
+                # Determine environment class
+                env_class=""
+                if [[ $name == *"dev"* ]]; then
+                    env_class="env-dev"
+                elif [[ $name == *"staging"* ]]; then
+                    env_class="env-staging"
+                elif [[ $name == *"prod"* ]]; then
+                    env_class="env-prod"
+                fi
+                
+                # Extract environment and region
+                IFS='-' read -ra PARTS <<< "$name"
+                environment=${PARTS[0]}
+                region=$(IFS=-; echo "${PARTS[*]:1}")
+                
+                cat >> diagrams/index.html << EOF
+                    <div class="diagram-card $env_class">
+                        <h3>$environment ($region)</h3>
+                        <div class="diagram-preview">
+                            <a href="$filename" target="_blank">
+                                <img src="$filename" alt="$name infrastructure diagram" loading="lazy">
+                            </a>
+                        </div>
+                        <p style="text-align: center;">
+                            <a href="$filename" target="_blank" class="view-link">View Full Diagram</a>
+                        </p>
+                    </div>
+        EOF
+            fi
+        done
+        
+        cat >> diagrams/index.html << EOF
+                </div>
+                
+                <div class="timestamp">
+                    Last updated: $(date -u "+%Y-%m-%d %H:%M:%S UTC")
+                    <br>Generated from commit: ${{ github.sha }}
+                </div>
+            </div>
+        </body>
+        </html>
+        EOF
+    
+    - name: Check for changes
+      id: verify-changed-files
+      run: |
+        if git diff --quiet HEAD diagrams/; then
+          echo "changed=false" >> $GITHUB_OUTPUT
+        else
+          echo "changed=true" >> $GITHUB_OUTPUT
+        fi
+    
+    - name: Commit and push changes
+      if: steps.verify-changed-files.outputs.changed == 'true'
+      run: |
+        git config --local user.email "action@github.com"
+        git config --local user.name "GitHub Action"
+        git add diagrams/
+        git commit -m "Auto-update Terragrunt infrastructure diagrams
+        
+        - Updated diagrams for all environments
+        - Generated on $(date -u '+%Y-%m-%d %H:%M:%S UTC')
+        - Commit: ${{ github.sha }}
+        
+        [skip ci]"
+        git push
+    
+    - name: Create deployment summary
+      run: |
+        echo "## Infrastructure Diagrams Updated" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "The following Terragrunt infrastructure diagrams have been generated and updated:" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        
+        for svg in diagrams/*.svg; do
+          if [ -f "$svg" ]; then
+            filename=$(basename "$svg")
+            name=${filename%.svg}
+            echo "- **$name**" >> $GITHUB_STEP_SUMMARY
+          fi
+        done
+        
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "View all diagrams: [Infrastructure Diagrams Index](./diagrams/index.html)" >> $GITHUB_STEP_SUMMARY

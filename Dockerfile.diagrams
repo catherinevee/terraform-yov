@@ -1,0 +1,40 @@
+# Dockerfile for Terragrunt diagram generation
+FROM hashicorp/terraform:1.5.7 AS terraform
+
+FROM alpine:3.18
+
+# Install dependencies
+RUN apk add --no-cache \
+    python3 \
+    py3-pip \
+    graphviz \
+    bash \
+    curl \
+    git \
+    jq
+
+# Install Python packages
+RUN pip3 install --no-cache-dir \
+    blastradius \
+    terraform-visual \
+    graphviz
+
+# Install Terragrunt
+ARG TERRAGRUNT_VERSION=0.53.0
+RUN curl -L "https://github.com/gruntwork-io/terragrunt/releases/download/v${TERRAGRUNT_VERSION}/terragrunt_linux_amd64" \
+    -o /usr/local/bin/terragrunt && \
+    chmod +x /usr/local/bin/terragrunt
+
+# Copy Terraform from official image
+COPY --from=terraform /bin/terraform /usr/local/bin/
+
+# Copy scripts
+COPY scripts/ /usr/local/bin/
+RUN chmod +x /usr/local/bin/*.sh /usr/local/bin/*.ps1
+
+# Set working directory
+WORKDIR /workdir
+
+# Default command
+ENTRYPOINT ["/usr/local/bin/generate-diagrams.sh"]
+CMD ["generate-all"]

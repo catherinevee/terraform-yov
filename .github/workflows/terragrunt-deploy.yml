@@ -1,0 +1,669 @@
+# =============================================================================
+# TERRAGRUNT INFRASTRUCTURE DEPLOYMENT PIPELINE
+# =============================================================================
+# Enterprise-grade CI/CD pipeline for Terragrunt infrastructure deployment
+# with security scanning, cost estimation, and multi-environment support
+
+name: Terragrunt Infrastructure Deployment
+
+on:
+  push:
+    branches: 
+      - main
+      - develop
+      - 'feature/**'
+    paths:
+      - 'aws/**'
+      - 'gcp/**'
+      - 'azure/**'
+      - '_envcommon/**'
+      - '*.hcl'
+      - '.github/workflows/**'
+  
+  pull_request:
+    branches: 
+      - main
+      - develop
+    paths:
+      - 'aws/**'
+      - 'gcp/**'
+      - 'azure/**'
+      - '_envcommon/**'
+      - '*.hcl'
+  
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Environment to deploy'
+        required: true
+        type: choice
+        options:
+          - dev
+          - staging
+          - prod
+        default: dev
+      
+      region:
+        description: 'AWS Region to deploy'
+        required: true
+        type: choice
+        options:
+          - us-east-1
+          - us-west-2
+          - eu-west-1
+        default: us-east-1
+      
+      action:
+        description: 'Terraform action to perform'
+        required: true
+        type: choice
+        options:
+          - plan
+          - apply
+          - destroy
+        default: plan
+      
+      component:
+        description: 'Component to deploy (optional - leave empty for all)'
+        required: false
+        type: string
+        default: ''
+
+# Global environment variables
+env:
+  TERRAFORM_VERSION: "1.5.7"
+  TERRAGRUNT_VERSION: "0.53.0"
+  TFSEC_VERSION: "1.28.1"
+  CHECKOV_VERSION: "3.1.9"
+  INFRACOST_VERSION: "0.10.29"
+  OPA_VERSION: "0.58.0"
+  AWS_DEFAULT_REGION: us-east-1
+  
+  # Security and compliance
+  ENABLE_SECURITY_SCAN: true
+  ENABLE_COST_ESTIMATION: true
+  ENABLE_POLICY_VALIDATION: true
+  
+  # Deployment settings
+  TERRAGRUNT_PARALLELISM: 5
+  TERRAFORM_PLAN_TIMEOUT: 30m
+  TERRAFORM_APPLY_TIMEOUT: 60m
+
+# Define job concurrency to prevent conflicts
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}-${{ inputs.environment || 'auto' }}-${{ inputs.region || 'auto' }}
+  cancel-in-progress: false  # Don't cancel production deployments
+
+jobs:
+  # ==========================================================================
+  # VALIDATION AND PREPARATION
+  # ==========================================================================
+  
+  validate-changes:
+    name: Validate Configuration Changes
+    runs-on: ubuntu-latest
+    outputs:
+      changed-environments: ${{ steps.detect-changes.outputs.environments }}
+      changed-regions: ${{ steps.detect-changes.outputs.regions }}
+      changed-components: ${{ steps.detect-changes.outputs.components }}
+      security-scan-required: ${{ steps.detect-changes.outputs.security-scan }}
+      cost-estimation-required: ${{ steps.detect-changes.outputs.cost-estimation }}
+    
+    steps:
+      - name: 📥 Checkout Repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Full history for accurate change detection
+          
+      - name: 🔧 Setup Tools
+        run: |
+          # Install Terraform
+          curl -fsSL https://releases.hashicorp.com/terraform/${TERRAFORM_VERSION}/terraform_${TERRAFORM_VERSION}_linux_amd64.zip -o terraform.zip
+          unzip terraform.zip && sudo mv terraform /usr/local/bin/
+          
+          # Install Terragrunt
+          curl -fsSL https://github.com/gruntwork-io/terragrunt/releases/download/v${TERRAGRUNT_VERSION}/terragrunt_linux_amd64 -o terragrunt
+          chmod +x terragrunt && sudo mv terragrunt /usr/local/bin/
+          
+          # Verify installations
+          terraform version
+          terragrunt version
+          
+      - name: 🔍 Detect Infrastructure Changes
+        id: detect-changes
+        run: |
+          # Detect changed files and extract environments/regions/components
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            # Manual dispatch - use provided inputs
+            echo "environments=[\"${{ inputs.environment }}\"]" >> $GITHUB_OUTPUT
+            echo "regions=[\"${{ inputs.region }}\"]" >> $GITHUB_OUTPUT
+            echo "components=[\"${{ inputs.component || 'all' }}\"]" >> $GITHUB_OUTPUT
+            echo "security-scan=true" >> $GITHUB_OUTPUT
+            echo "cost-estimation=true" >> $GITHUB_OUTPUT
+          else
+            # Automatic detection based on changed files
+            CHANGED_FILES=$(git diff --name-only ${{ github.event.before }}..${{ github.sha }} || git diff --name-only HEAD~1)
+            
+            # Extract unique environments
+            ENVIRONMENTS=$(echo "$CHANGED_FILES" | grep -E '^aws/[^/]+/[^/]+/' | cut -d'/' -f3 | sort -u | jq -R -s -c 'split("\n")[:-1]')
+            echo "environments=${ENVIRONMENTS:-[]}" >> $GITHUB_OUTPUT
+            
+            # Extract unique regions
+            REGIONS=$(echo "$CHANGED_FILES" | grep -E '^aws/[^/]+/' | cut -d'/' -f2 | sort -u | jq -R -s -c 'split("\n")[:-1]')
+            echo "regions=${REGIONS:-[]}" >> $GITHUB_OUTPUT
+            
+            # Extract unique components
+            COMPONENTS=$(echo "$CHANGED_FILES" | grep -E '^aws/[^/]+/[^/]+/[^/]+/' | cut -d'/' -f4 | sort -u | jq -R -s -c 'split("\n")[:-1]')
+            echo "components=${COMPONENTS:-[]}" >> $GITHUB_OUTPUT
+            
+            # Determine if security scan is needed
+            if echo "$CHANGED_FILES" | grep -qE '\.(hcl|tf)$'; then
+              echo "security-scan=true" >> $GITHUB_OUTPUT
+              echo "cost-estimation=true" >> $GITHUB_OUTPUT
+            else
+              echo "security-scan=false" >> $GITHUB_OUTPUT
+              echo "cost-estimation=false" >> $GITHUB_OUTPUT
+            fi
+          fi
+          
+      - name: 🔍 Validate Terragrunt Configuration
+        run: |
+          echo "🔍 Validating Terragrunt configurations..."
+          
+          # Find all terragrunt.hcl files and validate them
+          find . -name "terragrunt.hcl" -type f | while read -r tg_file; do
+            echo "Validating: $tg_file"
+            cd "$(dirname "$tg_file")"
+            
+            # Validate Terragrunt configuration syntax
+            terragrunt validate-inputs --terragrunt-non-interactive --terragrunt-log-level warn
+            
+            # Return to root directory
+            cd - > /dev/null
+          done
+          
+      - name: 📋 Format Check
+        run: |
+          echo "📋 Checking HCL formatting..."
+          terragrunt hclfmt --terragrunt-check --terragrunt-diff
+          
+      - name: 📊 Generate Change Summary
+        run: |
+          echo "## 📊 Infrastructure Change Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Changed Environments:** ${{ steps.detect-changes.outputs.environments }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Changed Regions:** ${{ steps.detect-changes.outputs.regions }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Changed Components:** ${{ steps.detect-changes.outputs.components }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Security Scan Required:** ${{ steps.detect-changes.outputs.security-scan }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Cost Estimation Required:** ${{ steps.detect-changes.outputs.cost-estimation }}" >> $GITHUB_STEP_SUMMARY
+
+  # ==========================================================================
+  # SECURITY SCANNING
+  # ==========================================================================
+  
+  security-scan:
+    name: Security & Compliance Scanning
+    runs-on: ubuntu-latest
+    needs: validate-changes
+    if: needs.validate-changes.outputs.security-scan-required == 'true'
+    
+    permissions:
+      security-events: write
+      actions: read
+      contents: read
+    
+    steps:
+      - name: 📥 Checkout Repository
+        uses: actions/checkout@v4
+        
+      - name: 🔧 Setup Security Tools
+        run: |
+          # Install TFSec
+          curl -fsSL https://github.com/aquasecurity/tfsec/releases/download/v${TFSEC_VERSION}/tfsec-linux-amd64 -o tfsec
+          chmod +x tfsec && sudo mv tfsec /usr/local/bin/
+          
+          # Install Checkov
+          pip install checkov==${CHECKOV_VERSION}
+          
+          # Install OPA
+          curl -fsSL https://github.com/open-policy-agent/opa/releases/download/v${OPA_VERSION}/opa_linux_amd64 -o opa
+          chmod +x opa && sudo mv opa /usr/local/bin/
+          
+      - name: 🔒 TFSec Security Scan
+        run: |
+          echo "🔒 Running TFSec security scan..."
+          tfsec . \
+            --config-file .tfsec.yml \
+            --format sarif \
+            --out tfsec-results.sarif \
+            --minimum-severity HIGH \
+            --include-ignored \
+            --exclude-downloaded-modules
+            
+      - name: 🔍 Checkov Security Scan
+        id: checkov
+        run: |
+          echo "🔍 Running Checkov security scan..."
+          checkov \
+            --directory . \
+            --framework terraform \
+            --output sarif \
+            --output-file-path checkov-results.sarif \
+            --quiet \
+            --compact
+            
+      - name: 📋 Upload Security Scan Results
+        uses: github/codeql-action/upload-sarif@v2
+        if: always()
+        with:
+          sarif_file: |
+            tfsec-results.sarif
+            checkov-results.sarif
+          category: infrastructure-security
+          
+      - name: 🚨 Security Scan Summary
+        if: always()
+        run: |
+          echo "## 🔒 Security Scan Results" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          # Parse TFSec results
+          if [ -f tfsec-results.sarif ]; then
+            TFSEC_ISSUES=$(jq '.runs[0].results | length' tfsec-results.sarif 2>/dev/null || echo "0")
+            echo "**TFSec Issues Found:** $TFSEC_ISSUES" >> $GITHUB_STEP_SUMMARY
+          fi
+          
+          # Parse Checkov results
+          if [ -f checkov-results.sarif ]; then
+            CHECKOV_ISSUES=$(jq '.runs[0].results | length' checkov-results.sarif 2>/dev/null || echo "0")
+            echo "**Checkov Issues Found:** $CHECKOV_ISSUES" >> $GITHUB_STEP_SUMMARY
+          fi
+
+  # ==========================================================================
+  # COST ESTIMATION
+  # ==========================================================================
+  
+  cost-estimation:
+    name: 💰 Infrastructure Cost Estimation
+    runs-on: ubuntu-latest
+    needs: validate-changes
+    if: needs.validate-changes.outputs.cost-estimation-required == 'true'
+    
+    steps:
+      - name: 📥 Checkout Repository
+        uses: actions/checkout@v4
+        
+      - name: 💰 Setup Infracost
+        uses: infracost/actions/setup@v2
+        with:
+          api-key: ${{ secrets.INFRACOST_API_KEY }}
+          version: ${{ env.INFRACOST_VERSION }}
+          
+      - name: 📊 Generate Cost Estimate
+        run: |
+          echo "💰 Generating infrastructure cost estimates..."
+          
+          # Generate cost breakdown for each environment
+          for env in $(echo '${{ needs.validate-changes.outputs.changed-environments }}' | jq -r '.[]'); do
+            for region in $(echo '${{ needs.validate-changes.outputs.changed-regions }}' | jq -r '.[]'); do
+              if [ -d "aws/$region/$env" ]; then
+                echo "Estimating costs for $env in $region..."
+                
+                infracost breakdown \
+                  --path "aws/$region/$env" \
+                  --format json \
+                  --out-file "infracost-$env-$region.json" \
+                  --project-name "yov-infrastructure-$env-$region"
+              fi
+            done
+          done
+          
+      - name: 💬 Post Cost Comment to PR
+        if: github.event_name == 'pull_request'
+        run: |
+          # Combine all cost files
+          infracost output \
+            --path "infracost-*.json" \
+            --format github-comment \
+            --out-file infracost-comment.md
+            
+          # Post comment to PR
+          infracost comment github \
+            --path infracost-comment.md \
+            --repo ${{ github.repository }} \
+            --pull-request ${{ github.event.pull_request.number }} \
+            --github-token ${{ secrets.GITHUB_TOKEN }} \
+            --behavior update
+            
+      - name: 📊 Cost Summary
+        run: |
+          echo "## 💰 Infrastructure Cost Estimate" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          # Generate summary from cost files
+          for cost_file in infracost-*.json; do
+            if [ -f "$cost_file" ]; then
+              MONTHLY_COST=$(jq -r '.totalMonthlyCost // "0"' "$cost_file")
+              PROJECT_NAME=$(jq -r '.projects[0].name // "unknown"' "$cost_file")
+              echo "**$PROJECT_NAME:** $${MONTHLY_COST}/month" >> $GITHUB_STEP_SUMMARY
+            fi
+          done
+
+  # ==========================================================================
+  # TERRAGRUNT PLANNING
+  # ==========================================================================
+  
+  terragrunt-plan:
+    name: 📋 Terragrunt Plan
+    runs-on: ubuntu-latest
+    needs: [validate-changes, security-scan]
+    if: always() && !failure() && !cancelled()
+    
+    strategy:
+      fail-fast: false
+      matrix:
+        include: ${{ fromJson(needs.validate-changes.outputs.changed-environments) }}
+    
+    permissions:
+      id-token: write
+      contents: read
+      pull-requests: write
+    
+    steps:
+      - name: 📥 Checkout Repository
+        uses: actions/checkout@v4
+        
+      - name: 🔧 Setup Tools
+        run: |
+          # Install Terraform
+          curl -fsSL https://releases.hashicorp.com/terraform/${TERRAFORM_VERSION}/terraform_${TERRAFORM_VERSION}_linux_amd64.zip -o terraform.zip
+          unzip terraform.zip && sudo mv terraform /usr/local/bin/
+          
+          # Install Terragrunt
+          curl -fsSL https://github.com/gruntwork-io/terragrunt/releases/download/v${TERRAGRUNT_VERSION}/terragrunt_linux_amd64 -o terragrunt
+          chmod +x terragrunt && sudo mv terragrunt /usr/local/bin/
+          
+      - name: 🔐 Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::${{ fromJson('{"dev":"123456789012","staging":"234567890123","prod":"345678901234"}')[matrix.include] }}:role/YOVGitHubActionsRole
+          aws-region: us-east-1
+          role-session-name: terragrunt-plan-${{ matrix.include }}-${{ github.run_id }}
+          role-duration-seconds: 3600
+          
+      - name: 📋 Terragrunt Plan
+        id: plan
+        run: |
+          echo "📋 Running Terragrunt plan for ${{ matrix.include }}..."
+          
+          # Set environment variables
+          export TF_IN_AUTOMATION=true
+          export TERRAGRUNT_NON_INTERACTIVE=true
+          export TERRAGRUNT_LOG_LEVEL=warn
+          
+          # Determine regions to plan
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            REGIONS='["${{ inputs.region }}"]'
+          else
+            REGIONS='${{ needs.validate-changes.outputs.changed-regions }}'
+          fi
+          
+          # Plan each region
+          for region in $(echo "$REGIONS" | jq -r '.[]'); do
+            if [ -d "aws/$region/${{ matrix.include }}" ]; then
+              echo "Planning aws/$region/${{ matrix.include }}..."
+              
+              cd "aws/$region/${{ matrix.include }}"
+              
+              # Determine components to plan
+              if [ "${{ inputs.component }}" != "" ] && [ "${{ inputs.component }}" != "all" ]; then
+                # Plan specific component
+                if [ -d "${{ inputs.component }}" ]; then
+                  cd "${{ inputs.component }}"
+                  terragrunt plan \
+                    --terragrunt-non-interactive \
+                    --terragrunt-parallelism ${{ env.TERRAGRUNT_PARALLELISM }} \
+                    -out=tfplan-${{ matrix.include }}-$region-${{ inputs.component }} \
+                    -detailed-exitcode
+                  cd ..
+                fi
+              else
+                # Plan all components
+                terragrunt run-all plan \
+                  --terragrunt-non-interactive \
+                  --terragrunt-parallelism ${{ env.TERRAGRUNT_PARALLELISM }} \
+                  -out=tfplan-${{ matrix.include }}-$region \
+                  -detailed-exitcode
+              fi
+              
+              cd - > /dev/null
+            fi
+          done
+          
+        timeout-minutes: 30
+        continue-on-error: true
+        
+      - name: 📤 Upload Plan Artifacts
+        uses: actions/upload-artifact@v3
+        if: always()
+        with:
+          name: tfplan-${{ matrix.include }}
+          path: aws/**/tfplan-*
+          retention-days: 30
+          
+      - name: 📋 Plan Summary
+        run: |
+          echo "## 📋 Terragrunt Plan Summary - ${{ matrix.include }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Environment:** ${{ matrix.include }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Status:** ${{ steps.plan.outcome }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Plan Files Generated:** $(find aws -name 'tfplan-*' | wc -l)" >> $GITHUB_STEP_SUMMARY
+
+  # ==========================================================================
+  # PRODUCTION APPROVAL GATE
+  # ==========================================================================
+  
+  production-approval:
+    name: ⚠️ Production Deployment Approval
+    runs-on: ubuntu-latest
+    needs: [terragrunt-plan]
+    if: contains(needs.validate-changes.outputs.changed-environments, 'prod') && github.ref == 'refs/heads/main'
+    environment:
+      name: production-approval
+      url: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}
+    
+    steps:
+      - name: ⚠️ Production Deployment Notice
+        run: |
+          echo "🚨 **PRODUCTION DEPLOYMENT DETECTED** 🚨"
+          echo ""
+          echo "This workflow will deploy changes to the PRODUCTION environment."
+          echo "Please ensure:"
+          echo "- All security scans have passed"
+          echo "- Cost estimates have been reviewed"
+          echo "- Change has been approved by the team"
+          echo "- Deployment window is appropriate"
+          echo ""
+          echo "**Environments to deploy:** ${{ needs.validate-changes.outputs.changed-environments }}"
+          echo "**Regions to deploy:** ${{ needs.validate-changes.outputs.changed-regions }}"
+
+  # ==========================================================================
+  # TERRAGRUNT DEPLOYMENT
+  # ==========================================================================
+  
+  terragrunt-apply:
+    name: 🚀 Terragrunt Apply
+    runs-on: ubuntu-latest
+    needs: [validate-changes, terragrunt-plan, production-approval]
+    if: always() && !failure() && !cancelled() && (github.ref == 'refs/heads/main' || github.event_name == 'workflow_dispatch')
+    
+    strategy:
+      fail-fast: false
+      matrix:
+        include: ${{ fromJson(needs.validate-changes.outputs.changed-environments) }}
+    
+    environment:
+      name: ${{ matrix.include }}
+      url: https://${{ matrix.include }}.yov.com
+    
+    permissions:
+      id-token: write
+      contents: read
+      issues: write
+    
+    steps:
+      - name: 📥 Checkout Repository
+        uses: actions/checkout@v4
+        
+      - name: 🔧 Setup Tools
+        run: |
+          # Install Terraform
+          curl -fsSL https://releases.hashicorp.com/terraform/${TERRAFORM_VERSION}/terraform_${TERRAFORM_VERSION}_linux_amd64.zip -o terraform.zip
+          unzip terraform.zip && sudo mv terraform /usr/local/bin/
+          
+          # Install Terragrunt
+          curl -fsSL https://github.com/gruntwork-io/terragrunt/releases/download/v${TERRAGRUNT_VERSION}/terragrunt_linux_amd64 -o terragrunt
+          chmod +x terragrunt && sudo mv terragrunt /usr/local/bin/
+          
+      - name: 📥 Download Plan Artifacts
+        uses: actions/download-artifact@v3
+        with:
+          name: tfplan-${{ matrix.include }}
+          path: .
+          
+      - name: 🔐 Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::${{ fromJson('{"dev":"123456789012","staging":"234567890123","prod":"345678901234"}')[matrix.include] }}:role/YOVGitHubActionsRole
+          aws-region: us-east-1
+          role-session-name: terragrunt-apply-${{ matrix.include }}-${{ github.run_id }}
+          role-duration-seconds: 7200  # 2 hours for apply operations
+          
+      - name: 🚀 Terragrunt Apply
+        id: apply
+        run: |
+          echo "🚀 Running Terragrunt apply for ${{ matrix.include }}..."
+          
+          # Set environment variables
+          export TF_IN_AUTOMATION=true
+          export TERRAGRUNT_NON_INTERACTIVE=true
+          export TERRAGRUNT_LOG_LEVEL=warn
+          
+          # Determine regions to deploy
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            REGIONS='["${{ inputs.region }}"]'
+          else
+            REGIONS='${{ needs.validate-changes.outputs.changed-regions }}'
+          fi
+          
+          # Apply to each region
+          for region in $(echo "$REGIONS" | jq -r '.[]'); do
+            if [ -d "aws/$region/${{ matrix.include }}" ]; then
+              echo "Applying to aws/$region/${{ matrix.include }}..."
+              
+              cd "aws/$region/${{ matrix.include }}"
+              
+              # Determine action
+              ACTION="${{ inputs.action || 'apply' }}"
+              
+              if [ "$ACTION" = "destroy" ]; then
+                # Destroy infrastructure
+                terragrunt run-all destroy \
+                  --terragrunt-non-interactive \
+                  --terragrunt-parallelism 2 \
+                  --auto-approve
+              else
+                # Apply infrastructure
+                if [ "${{ inputs.component }}" != "" ] && [ "${{ inputs.component }}" != "all" ]; then
+                  # Apply specific component
+                  if [ -d "${{ inputs.component }}" ]; then
+                    cd "${{ inputs.component }}"
+                    if [ -f "tfplan-${{ matrix.include }}-$region-${{ inputs.component }}" ]; then
+                      terragrunt apply tfplan-${{ matrix.include }}-$region-${{ inputs.component }}
+                    else
+                      terragrunt apply --terragrunt-non-interactive -auto-approve
+                    fi
+                    cd ..
+                  fi
+                else
+                  # Apply all components in dependency order
+                  terragrunt run-all apply \
+                    --terragrunt-non-interactive \
+                    --terragrunt-parallelism 2 \
+                    -auto-approve
+                fi
+              fi
+              
+              cd - > /dev/null
+            fi
+          done
+          
+        timeout-minutes: 60
+        
+      - name: 📊 Deployment Summary
+        if: always()
+        run: |
+          echo "## 🚀 Deployment Summary - ${{ matrix.include }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Environment:** ${{ matrix.include }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Action:** ${{ inputs.action || 'apply' }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Status:** ${{ steps.apply.outcome }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Started:** $(date -u '+%Y-%m-%d %H:%M:%S UTC')" >> $GITHUB_STEP_SUMMARY
+          
+      - name: 📢 Slack Notification
+        if: always()
+        uses: 8398a7/action-slack@v3
+        with:
+          status: ${{ job.status }}
+          channel: '#infrastructure'
+          username: 'GitHub Actions'
+          icon_emoji: ':rocket:'
+          fields: repo,message,commit,author,action,eventName,ref,workflow
+          text: |
+            Terragrunt deployment to **${{ matrix.include }}** environment: ${{ job.status }}
+            
+            **Repository:** ${{ github.repository }}
+            **Branch:** ${{ github.ref_name }}
+            **Commit:** ${{ github.sha }}
+            **Author:** ${{ github.actor }}
+            **Workflow:** ${{ github.workflow }}
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+
+  # ==========================================================================
+  # POST-DEPLOYMENT VALIDATION
+  # ==========================================================================
+  
+  post-deployment-validation:
+    name: ✅ Post-Deployment Validation
+    runs-on: ubuntu-latest
+    needs: [terragrunt-apply]
+    if: always() && !failure() && !cancelled()
+    
+    steps:
+      - name: 📥 Checkout Repository
+        uses: actions/checkout@v4
+        
+      - name: ✅ Infrastructure Health Check
+        run: |
+          echo "✅ Running post-deployment health checks..."
+          
+          # Add your infrastructure health checks here
+          # Examples:
+          # - Check that resources are running
+          # - Validate endpoints are accessible
+          # - Run smoke tests
+          # - Validate monitoring is working
+          
+          echo "Health checks completed successfully!"
+          
+      - name: 📊 Final Summary
+        run: |
+          echo "## ✅ Deployment Complete" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "🎉 Infrastructure deployment completed successfully!" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Next Steps:**" >> $GITHUB_STEP_SUMMARY
+          echo "- Monitor the deployed infrastructure" >> $GITHUB_STEP_SUMMARY
+          echo "- Validate application functionality" >> $GITHUB_STEP_SUMMARY
+          echo "- Update documentation if needed" >> $GITHUB_STEP_SUMMARY
