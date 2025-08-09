@@ -1,0 +1,222 @@
+# =============================================================================
+# LIMIT RDS INSTANCE SIZES - COST CONTROL POLICY
+# =============================================================================
+# Restricts RDS instance classes based on environment to control database costs
+
+import "tfplan/v2" as tfplan
+import "strings"
+
+# Allowed RDS instance classes by environment
+dev_allowed_db_instances = [
+  "db.t3.micro",
+  "db.t3.small",
+  "db.t2.micro",
+  "db.t2.small",
+  "db.t4g.micro",
+  "db.t4g.small",
+]
+
+staging_allowed_db_instances = [
+  "db.t3.micro",
+  "db.t3.small",
+  "db.t3.medium",
+  "db.t3.large",
+  "db.t2.micro",
+  "db.t2.small",
+  "db.t2.medium",
+  "db.t2.large",
+  "db.t4g.micro",
+  "db.t4g.small",
+  "db.t4g.medium",
+  "db.t4g.large",
+  "db.m5.large",
+  "db.m5.xlarge",
+  "db.r5.large",
+  "db.r5.xlarge",
+]
+
+prod_allowed_db_instances = [
+  "db.t3.medium",
+  "db.t3.large",
+  "db.t3.xlarge",
+  "db.t3.2xlarge",
+  "db.t4g.medium",
+  "db.t4g.large",
+  "db.t4g.xlarge",
+  "db.t4g.2xlarge",
+  "db.m5.large",
+  "db.m5.xlarge",
+  "db.m5.2xlarge",
+  "db.m5.4xlarge",
+  "db.m5.8xlarge",
+  "db.r5.large",
+  "db.r5.xlarge",
+  "db.r5.2xlarge",
+  "db.r5.4xlarge",
+  "db.r5.8xlarge",
+]
+
+# Maximum storage sizes by environment (in GB)
+max_storage_by_env = {
+  "dev": 100,
+  "staging": 500,
+  "prod": 2000,
+}
+
+# Get all RDS instances from the plan
+rds_instances = filter tfplan.resource_changes as _, resource_changes {
+  resource_changes.type is "aws_db_instance" and
+  (resource_changes.mode is "managed" and
+   (resource_changes.change.actions contains "create" or
+    resource_changes.change.actions contains "update"))
+}
+
+# Function to determine environment from tags or address
+determine_environment = func(address, tags) {
+  # Check address for environment indicators
+  if strings.contains(strings.to_lower(address), "dev") {
+    return "dev"
+  } else if strings.contains(strings.to_lower(address), "staging") {
+    return "staging"
+  } else if strings.contains(strings.to_lower(address), "prod") {
+    return "prod"
+  }
+  
+  # Check tags for environment
+  if tags is not null {
+    if "Environment" in tags {
+      env = strings.to_lower(tags.Environment else "")
+      if strings.contains(env, "dev") {
+        return "dev"
+      } else if strings.contains(env, "staging") {
+        return "staging"
+      } else if strings.contains(env, "prod") {
+        return "prod"
+      }
+    }
+  }
+  
+  # Default to production rules if unknown
+  return "prod"
+}
+
+# Function to get allowed DB instances for environment
+get_allowed_db_instances = func(environment) {
+  if environment is "dev" {
+    return dev_allowed_db_instances
+  } else if environment is "staging" {
+    return staging_allowed_db_instances
+  } else {
+    return prod_allowed_db_instances
+  }
+}
+
+# Validate RDS instance classes
+validate_rds_instance_classes = rule {
+  all rds_instances as address, rc {
+    instance_class = rc.change.after.instance_class else ""
+    tags = rc.change.after.tags else {}
+    
+    environment = determine_environment(address, tags)
+    allowed_instances = get_allowed_db_instances(environment)
+    
+    instance_class in allowed_instances else {
+      print("COST CONTROL VIOLATION:")
+      print("RDS instance", address, "uses instance class", instance_class)
+      print("Environment:", environment)
+      print("Allowed instance classes for", environment + ":", allowed_instances)
+      print("Consider using a smaller instance class to reduce database costs.")
+      false
+    }
+  }
+}
+
+# Validate RDS storage sizes
+validate_rds_storage_sizes = rule {
+  all rds_instances as address, rc {
+    allocated_storage = rc.change.after.allocated_storage else 0
+    max_allocated_storage = rc.change.after.max_allocated_storage else 0
+    tags = rc.change.after.tags else {}
+    
+    environment = determine_environment(address, tags)
+    max_storage = max_storage_by_env[environment]
+    
+    # Check allocated storage
+    storage_valid = allocated_storage <= max_storage
+    
+    # Check max allocated storage if autoscaling is enabled
+    max_storage_valid = true
+    if max_allocated_storage > 0 {
+      max_storage_valid = max_allocated_storage <= max_storage
+    }
+    
+    storage_valid and max_storage_valid else {
+      print("COST CONTROL VIOLATION:")
+      print("RDS instance", address, "exceeds storage limits for", environment)
+      print("Allocated storage:", allocated_storage, "GB")
+      if max_allocated_storage > 0 {
+        print("Max allocated storage:", max_allocated_storage, "GB")
+      }
+      print("Maximum allowed storage for", environment + ":", max_storage, "GB")
+      print("Consider reducing storage size to control costs.")
+      false
+    }
+  }
+}
+
+# Validate Multi-AZ is disabled for non-prod environments
+validate_multi_az = rule {
+  all rds_instances as address, rc {
+    multi_az = rc.change.after.multi_az else false
+    tags = rc.change.after.tags else {}
+    
+    environment = determine_environment(address, tags)
+    
+    # Allow Multi-AZ only for production
+    if environment is not "prod" {
+      not multi_az else {
+        print("COST CONTROL WARNING:")
+        print("RDS instance", address, "has Multi-AZ enabled in", environment, "environment")
+        print("Multi-AZ doubles the cost. Consider disabling for non-production environments.")
+        print("If high availability is required for testing, consider using read replicas instead.")
+        false
+      }
+    } else {
+      true
+    }
+  }
+}
+
+# Validate backup retention is reasonable for non-prod
+validate_backup_retention = rule {
+  all rds_instances as address, rc {
+    backup_retention_period = rc.change.after.backup_retention_period else 7
+    tags = rc.change.after.tags else {}
+    
+    environment = determine_environment(address, tags)
+    
+    # Set maximum retention by environment
+    max_retention = {
+      "dev": 7,
+      "staging": 14,
+      "prod": 30,
+    }
+    
+    backup_retention_period <= max_retention[environment] else {
+      print("COST CONTROL WARNING:")
+      print("RDS instance", address, "has excessive backup retention period")
+      print("Current retention:", backup_retention_period, "days")
+      print("Maximum recommended for", environment + ":", max_retention[environment], "days")
+      print("Longer retention increases storage costs.")
+      false
+    }
+  }
+}
+
+# Main rule
+main = rule {
+  validate_rds_instance_classes and
+  validate_rds_storage_sizes and
+  validate_multi_az and
+  validate_backup_retention
+}

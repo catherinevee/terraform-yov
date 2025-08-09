@@ -1,0 +1,351 @@
+# =============================================================================
+# ENFORCE ENVIRONMENT-SPECIFIC LIMITS - COST CONTROL POLICY
+# =============================================================================
+# Applies different cost controls based on environment (dev/staging/prod)
+
+import "tfplan/v2" as tfplan
+import "strings"
+
+# Environment-specific resource limits
+environment_limits = {
+  "dev": {
+    "max_instances": 5,
+    "max_databases": 2,
+    "max_load_balancers": 1,
+    "max_nat_gateways": 1,
+    "max_elasticache_clusters": 1,
+    "require_spot_instances": true,
+    "allow_multi_az": false,
+    "max_backup_retention": 7,
+    "require_scheduled_scaling": true,
+  },
+  "staging": {
+    "max_instances": 10,
+    "max_databases": 3,
+    "max_load_balancers": 2,
+    "max_nat_gateways": 2,
+    "max_elasticache_clusters": 2,
+    "require_spot_instances": false,
+    "allow_multi_az": true,
+    "max_backup_retention": 14,
+    "require_scheduled_scaling": true,
+  },
+  "prod": {
+    "max_instances": 50,
+    "max_databases": 10,
+    "max_load_balancers": 5,
+    "max_nat_gateways": 3,
+    "max_elasticache_clusters": 5,
+    "require_spot_instances": false,
+    "allow_multi_az": true,
+    "max_backup_retention": 30,
+    "require_scheduled_scaling": false,
+  },
+}
+
+# Get all relevant resources
+ec2_instances = filter tfplan.resource_changes as _, resource_changes {
+  resource_changes.type is "aws_instance" and
+  resource_changes.mode is "managed" and
+  (resource_changes.change.actions contains "create" or
+   resource_changes.change.actions contains "update")
+}
+
+databases = filter tfplan.resource_changes as _, resource_changes {
+  (resource_changes.type is "aws_db_instance" or resource_changes.type is "aws_rds_cluster") and
+  resource_changes.mode is "managed" and
+  (resource_changes.change.actions contains "create" or
+   resource_changes.change.actions contains "update")
+}
+
+load_balancers = filter tfplan.resource_changes as _, resource_changes {
+  (resource_changes.type is "aws_lb" or resource_changes.type is "aws_elb" or resource_changes.type is "aws_alb") and
+  resource_changes.mode is "managed" and
+  (resource_changes.change.actions contains "create" or
+   resource_changes.change.actions contains "update")
+}
+
+nat_gateways = filter tfplan.resource_changes as _, resource_changes {
+  resource_changes.type is "aws_nat_gateway" and
+  resource_changes.mode is "managed" and
+  (resource_changes.change.actions contains "create" or
+   resource_changes.change.actions contains "update")
+}
+
+elasticache_clusters = filter tfplan.resource_changes as _, resource_changes {
+  (resource_changes.type is "aws_elasticache_cluster" or resource_changes.type is "aws_elasticache_replication_group") and
+  resource_changes.mode is "managed" and
+  (resource_changes.change.actions contains "create" or
+   resource_changes.change.actions contains "update")
+}
+
+autoscaling_groups = filter tfplan.resource_changes as _, resource_changes {
+  resource_changes.type is "aws_autoscaling_group" and
+  resource_changes.mode is "managed" and
+  (resource_changes.change.actions contains "create" or
+   resource_changes.change.actions contains "update")
+}
+
+# Function to determine environment
+determine_environment = func(address, tags) {
+  # Check address for environment indicators
+  if strings.contains(strings.to_lower(address), "dev") {
+    return "dev"
+  } else if strings.contains(strings.to_lower(address), "staging") {
+    return "staging"
+  } else if strings.contains(strings.to_lower(address), "prod") {
+    return "prod"
+  }
+  
+  # Check tags for environment
+  if tags is not null {
+    if "Environment" in tags {
+      env = strings.to_lower(tags.Environment else "")
+      if strings.contains(env, "dev") {
+        return "dev"
+      } else if strings.contains(env, "staging") {
+        return "staging"
+      } else if strings.contains(env, "prod") {
+        return "prod"
+      }
+    }
+  }
+  
+  return "prod"  # Default to production limits (most restrictive for cost)
+}
+
+# Validate instance count per environment
+validate_instance_counts = rule {
+  # Group instances by environment
+  dev_instances = filter ec2_instances as address, rc {
+    tags = rc.change.after.tags else {}
+    environment = determine_environment(address, tags)
+    environment is "dev"
+  }
+  
+  staging_instances = filter ec2_instances as address, rc {
+    tags = rc.change.after.tags else {}
+    environment = determine_environment(address, tags)
+    environment is "staging"
+  }
+  
+  prod_instances = filter ec2_instances as address, rc {
+    tags = rc.change.after.tags else {}
+    environment = determine_environment(address, tags)
+    environment is "prod"
+  }
+  
+  # Check limits
+  dev_valid = length(dev_instances) <= environment_limits["dev"]["max_instances"]
+  staging_valid = length(staging_instances) <= environment_limits["staging"]["max_instances"]
+  prod_valid = length(prod_instances) <= environment_limits["prod"]["max_instances"]
+  
+  dev_valid and staging_valid and prod_valid else {
+    if not dev_valid {
+      print("COST CONTROL VIOLATION:")
+      print("Too many EC2 instances in development environment")
+      print("Current count:", length(dev_instances))
+      print("Maximum allowed:", environment_limits["dev"]["max_instances"])
+    }
+    if not staging_valid {
+      print("COST CONTROL VIOLATION:")
+      print("Too many EC2 instances in staging environment")
+      print("Current count:", length(staging_instances))
+      print("Maximum allowed:", environment_limits["staging"]["max_instances"])
+    }
+    if not prod_valid {
+      print("COST CONTROL VIOLATION:")
+      print("Too many EC2 instances in production environment")
+      print("Current count:", length(prod_instances))
+      print("Maximum allowed:", environment_limits["prod"]["max_instances"])
+    }
+    false
+  }
+}
+
+# Validate database count per environment
+validate_database_counts = rule {
+  # Group databases by environment
+  dev_databases = filter databases as address, rc {
+    tags = rc.change.after.tags else {}
+    environment = determine_environment(address, tags)
+    environment is "dev"
+  }
+  
+  staging_databases = filter databases as address, rc {
+    tags = rc.change.after.tags else {}
+    environment = determine_environment(address, tags)
+    environment is "staging"
+  }
+  
+  prod_databases = filter databases as address, rc {
+    tags = rc.change.after.tags else {}
+    environment = determine_environment(address, tags)
+    environment is "prod"
+  }
+  
+  # Check limits
+  dev_valid = length(dev_databases) <= environment_limits["dev"]["max_databases"]
+  staging_valid = length(staging_databases) <= environment_limits["staging"]["max_databases"]
+  prod_valid = length(prod_databases) <= environment_limits["prod"]["max_databases"]
+  
+  dev_valid and staging_valid and prod_valid else {
+    if not dev_valid {
+      print("COST CONTROL VIOLATION:")
+      print("Too many databases in development environment")
+      print("Current count:", length(dev_databases))
+      print("Maximum allowed:", environment_limits["dev"]["max_databases"])
+    }
+    if not staging_valid {
+      print("COST CONTROL VIOLATION:")
+      print("Too many databases in staging environment")
+      print("Current count:", length(staging_databases))
+      print("Maximum allowed:", environment_limits["staging"]["max_databases"])
+    }
+    if not prod_valid {
+      print("COST CONTROL VIOLATION:")
+      print("Too many databases in production environment")
+      print("Current count:", length(prod_databases))
+      print("Maximum allowed:", environment_limits["prod"]["max_databases"])
+    }
+    false
+  }
+}
+
+# Validate NAT Gateway limits
+validate_nat_gateway_limits = rule {
+  # Group NAT gateways by environment
+  dev_nat_gws = filter nat_gateways as address, rc {
+    environment = determine_environment(address, {})
+    environment is "dev"
+  }
+  
+  staging_nat_gws = filter nat_gateways as address, rc {
+    environment = determine_environment(address, {})
+    environment is "staging"
+  }
+  
+  prod_nat_gws = filter nat_gateways as address, rc {
+    environment = determine_environment(address, {})
+    environment is "prod"
+  }
+  
+  # Check limits
+  dev_valid = length(dev_nat_gws) <= environment_limits["dev"]["max_nat_gateways"]
+  staging_valid = length(staging_nat_gws) <= environment_limits["staging"]["max_nat_gateways"]
+  prod_valid = length(prod_nat_gws) <= environment_limits["prod"]["max_nat_gateways"]
+  
+  dev_valid and staging_valid and prod_valid else {
+    if not dev_valid {
+      print("COST CONTROL VIOLATION:")
+      print("Too many NAT Gateways in development environment")
+      print("Current count:", length(dev_nat_gws))
+      print("Maximum allowed:", environment_limits["dev"]["max_nat_gateways"])
+      print("Each NAT Gateway costs ~$45/month")
+    }
+    if not staging_valid {
+      print("COST CONTROL VIOLATION:")
+      print("Too many NAT Gateways in staging environment")
+      print("Current count:", length(staging_nat_gws))
+      print("Maximum allowed:", environment_limits["staging"]["max_nat_gateways"])
+    }
+    if not prod_valid {
+      print("COST CONTROL VIOLATION:")
+      print("Too many NAT Gateways in production environment")
+      print("Current count:", length(prod_nat_gws))
+      print("Maximum allowed:", environment_limits["prod"]["max_nat_gateways"])
+    }
+    false
+  }
+}
+
+# Enforce spot instances for development
+validate_spot_instances = rule {
+  all ec2_instances as address, rc {
+    tags = rc.change.after.tags else {}
+    environment = determine_environment(address, tags)
+    
+    if environment is "dev" and environment_limits["dev"]["require_spot_instances"] {
+      instance_market_options = rc.change.after.instance_market_options else null
+      
+      instance_market_options is not null and
+      instance_market_options.market_type is "spot" else {
+        print("COST CONTROL VIOLATION:")
+        print("Development instance", address, "should use spot instances for cost savings")
+        print("Add instance_market_options with market_type = 'spot'")
+        print("Spot instances can save up to 90% compared to on-demand pricing")
+        false
+      }
+    } else {
+      true
+    }
+  }
+}
+
+# Validate Multi-AZ restrictions
+validate_multi_az_restrictions = rule {
+  all databases as address, rc {
+    tags = rc.change.after.tags else {}
+    environment = determine_environment(address, tags)
+    multi_az = rc.change.after.multi_az else false
+    
+    if not environment_limits[environment]["allow_multi_az"] and multi_az {
+      print("COST CONTROL VIOLATION:")
+      print("Database", address, "has Multi-AZ enabled in", environment, "environment")
+      print("Multi-AZ is not cost-effective for", environment, "environments")
+      print("Multi-AZ doubles the database costs")
+      false
+    } else {
+      true
+    }
+  }
+}
+
+# Validate backup retention limits
+validate_backup_retention = rule {
+  all databases as address, rc {
+    tags = rc.change.after.tags else {}
+    environment = determine_environment(address, tags)
+    backup_retention = rc.change.after.backup_retention_period else 7
+    max_retention = environment_limits[environment]["max_backup_retention"]
+    
+    backup_retention <= max_retention else {
+      print("COST CONTROL VIOLATION:")
+      print("Database", address, "backup retention exceeds limit for", environment)
+      print("Current retention:", backup_retention, "days")
+      print("Maximum allowed:", max_retention, "days")
+      print("Longer retention increases storage costs")
+      false
+    }
+  }
+}
+
+# Recommend scheduled scaling for non-production
+validate_scheduled_scaling = rule {
+  all autoscaling_groups as address, rc {
+    tags = rc.change.after.tags else {}
+    environment = determine_environment(address, tags)
+    
+    if environment_limits[environment]["require_scheduled_scaling"] {
+      print("COST CONTROL RECOMMENDATION:")
+      print("Auto Scaling Group", address, "in", environment, "should have scheduled scaling")
+      print("Consider adding scheduled actions to scale down during off-hours")
+      print("This can reduce costs by 50-70% for non-production environments")
+      print("Example: Scale down to 0 instances at 6 PM, scale up at 8 AM")
+      true  # Advisory only
+    } else {
+      true
+    }
+  }
+}
+
+# Main rule
+main = rule {
+  validate_instance_counts and
+  validate_database_counts and
+  validate_nat_gateway_limits and
+  validate_spot_instances and
+  validate_multi_az_restrictions and
+  validate_backup_retention and
+  validate_scheduled_scaling
+}

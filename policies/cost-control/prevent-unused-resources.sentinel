@@ -1,0 +1,245 @@
+# =============================================================================
+# PREVENT UNUSED RESOURCES - COST CONTROL POLICY
+# =============================================================================
+# Detects and warns about potentially unused resources that incur costs
+
+import "tfplan/v2" as tfplan
+import "strings"
+
+# Get all resources that could become unused
+elastic_ips = filter tfplan.resource_changes as _, resource_changes {
+  resource_changes.type is "aws_eip" and
+  resource_changes.mode is "managed" and
+  (resource_changes.change.actions contains "create" or
+   resource_changes.change.actions contains "update")
+}
+
+load_balancers = filter tfplan.resource_changes as _, resource_changes {
+  (resource_changes.type is "aws_lb" or resource_changes.type is "aws_elb" or resource_changes.type is "aws_alb") and
+  resource_changes.mode is "managed" and
+  (resource_changes.change.actions contains "create" or
+   resource_changes.change.actions contains "update")
+}
+
+nat_gateways = filter tfplan.resource_changes as _, resource_changes {
+  resource_changes.type is "aws_nat_gateway" and
+  resource_changes.mode is "managed" and
+  (resource_changes.change.actions contains "create" or
+   resource_changes.change.actions contains "update")
+}
+
+ebs_volumes = filter tfplan.resource_changes as _, resource_changes {
+  resource_changes.type is "aws_ebs_volume" and
+  resource_changes.mode is "managed" and
+  (resource_changes.change.actions contains "create" or
+   resource_changes.change.actions contains "update")
+}
+
+cloudwatch_logs = filter tfplan.resource_changes as _, resource_changes {
+  resource_changes.type is "aws_cloudwatch_log_group" and
+  resource_changes.mode is "managed" and
+  (resource_changes.change.actions contains "create" or
+   resource_changes.change.actions contains "update")
+}
+
+# Function to determine environment
+determine_environment = func(address, tags) {
+  if strings.contains(strings.to_lower(address), "dev") {
+    return "dev"
+  } else if strings.contains(strings.to_lower(address), "staging") {
+    return "staging"
+  } else if strings.contains(strings.to_lower(address), "prod") {
+    return "prod"
+  }
+  
+  if tags is not null {
+    if "Environment" in tags {
+      env = strings.to_lower(tags.Environment else "")
+      if strings.contains(env, "dev") {
+        return "dev"
+      } else if strings.contains(env, "staging") {
+        return "staging"
+      } else if strings.contains(env, "prod") {
+        return "prod"
+      }
+    }
+  }
+  
+  return "unknown"
+}
+
+# Check for unattached Elastic IPs
+validate_elastic_ips = rule {
+  all elastic_ips as address, rc {
+    instance = rc.change.after.instance else ""
+    network_interface = rc.change.after.network_interface else ""
+    tags = rc.change.after.tags else {}
+    
+    # Elastic IP should be attached to something
+    has_attachment = instance is not "" or network_interface is not ""
+    
+    has_attachment else {
+      print("COST CONTROL WARNING:")
+      print("Elastic IP", address, "appears to be unattached")
+      print("Unattached Elastic IPs incur charges (~$3.65/month)")
+      print("Ensure this EIP will be attached to an instance or network interface")
+      print("Consider using a data source to reference existing EIPs if not creating new ones")
+      true  # Warning only, as this might be intentional during deployment
+    }
+  }
+}
+
+# Check for load balancers without targets
+validate_load_balancers = rule {
+  all load_balancers as address, rc {
+    tags = rc.change.after.tags else {}
+    lb_type = rc.change.after.load_balancer_type else "application"
+    
+    print("COST CONTROL REMINDER:")
+    print("Load Balancer", address, "of type", lb_type)
+    print("Ensure this load balancer will have targets attached")
+    print("Unused load balancers cost ~$16-23/month depending on type")
+    print("Consider using target group attachments or auto scaling groups")
+    
+    true  # Advisory only
+  }
+}
+
+# Check for standalone EBS volumes
+validate_ebs_volumes = rule {
+  all ebs_volumes as address, rc {
+    tags = rc.change.after.tags else {}
+    size = rc.change.after.size else 0
+    
+    # Look for attachment configuration
+    # This is advisory since volumes might be attached via separate resources
+    print("COST CONTROL REMINDER:")
+    print("EBS Volume", address, "size", size, "GB")
+    print("Ensure this volume will be attached to an instance")
+    print("Unattached volumes incur storage costs")
+    print("Cost: ~$0.10/GB/month for gp2, ~$0.125/GB/month for gp3")
+    
+    true  # Advisory only
+  }
+}
+
+# Check CloudWatch log retention
+validate_cloudwatch_logs = rule {
+  all cloudwatch_logs as address, rc {
+    retention_days = rc.change.after.retention_in_days else 0
+    tags = rc.change.after.tags else {}
+    environment = determine_environment(address, tags)
+    
+    # Recommend appropriate retention based on environment
+    recommended_retention = {
+      "dev": 7,
+      "staging": 30,
+      "prod": 90,
+      "unknown": 30,
+    }
+    
+    max_retention = recommended_retention[environment]
+    
+    if retention_days is 0 {
+      print("COST CONTROL WARNING:")
+      print("CloudWatch Log Group", address, "has indefinite retention")
+      print("This can lead to significant costs over time")
+      print("Recommended retention for", environment + ":", max_retention, "days")
+      print("Log storage costs $0.50/GB/month")
+      true  # Warning only
+    } else if retention_days > max_retention {
+      print("COST CONTROL WARNING:")
+      print("CloudWatch Log Group", address, "retention may be excessive")
+      print("Current retention:", retention_days, "days")
+      print("Recommended for", environment + ":", max_retention, "days")
+      print("Longer retention increases storage costs")
+      true  # Warning only
+    } else {
+      true
+    }
+  }
+}
+
+# Check for development resources that should be temporary
+validate_dev_resources = rule {
+  # Get all resources in development
+  all tfplan.resource_changes as address, rc {
+    if rc.mode is "managed" and 
+       (rc.change.actions contains "create" or rc.change.actions contains "update") {
+      
+      tags = rc.change.after.tags else {}
+      environment = determine_environment(address, tags)
+      
+      if environment is "dev" {
+        # Check for AutoShutdown tag
+        has_autoshutdown = "AutoShutdown" in tags
+        
+        # Check for expensive resource types in dev
+        expensive_types = [
+          "aws_instance",
+          "aws_db_instance", 
+          "aws_elasticache_cluster",
+          "aws_nat_gateway",
+          "aws_lb",
+        ]
+        
+        if rc.type in expensive_types and not has_autoshutdown {
+          print("COST CONTROL RECOMMENDATION:")
+          print("Development resource", address, "of type", rc.type)
+          print("Consider adding 'AutoShutdown' tag to control costs")
+          print("Development resources should be shut down when not in use")
+          print("This can save 50-70% on compute costs")
+        }
+      }
+    }
+    
+    true  # Always advisory
+  }
+}
+
+# Check for resources without clear purpose
+validate_resource_purpose = rule {
+  # Check high-cost resources for purpose tags
+  high_cost_types = [
+    "aws_instance",
+    "aws_db_instance",
+    "aws_rds_cluster", 
+    "aws_elasticache_cluster",
+    "aws_redshift_cluster",
+    "aws_emr_cluster",
+    "aws_nat_gateway",
+    "aws_lb",
+  ]
+  
+  all tfplan.resource_changes as address, rc {
+    if rc.type in high_cost_types and
+       rc.mode is "managed" and
+       (rc.change.actions contains "create" or rc.change.actions contains "update") {
+      
+      tags = rc.change.after.tags else {}
+      
+      has_purpose = "Purpose" in tags or "Description" in tags or "Component" in tags
+      
+      has_purpose else {
+        print("COST CONTROL RECOMMENDATION:")
+        print("High-cost resource", address, "of type", rc.type)
+        print("Consider adding a 'Purpose' or 'Description' tag")
+        print("This helps identify unused resources during cost reviews")
+        print("Example tags: Purpose='web-server', Component='database', Description='user-sessions'")
+        true  # Advisory only
+      }
+    } else {
+      true
+    }
+  }
+}
+
+# Main rule
+main = rule {
+  validate_elastic_ips and
+  validate_load_balancers and
+  validate_ebs_volumes and
+  validate_cloudwatch_logs and
+  validate_dev_resources and
+  validate_resource_purpose
+}

@@ -1,0 +1,56 @@
+# Terraform files
+*.tfstate
+*.tfstate.*
+*.tfvars
+*.tfvars.json
+.terraform/
+.terraform.lock.hcl
+
+# Terragrunt files
+.terragrunt-cache/
+
+# Generated files
+backend.tf
+provider.tf
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Temporary files
+*~
+*.tmp
+*.temp
+
+# Test files
+*test*
+*simple*
+*temp*
+
+# AWS credentials (should never be committed)
+aws-credentials*
+*.pem
+*.key
+
+# PowerShell execution policy files
+*.ps1xml
+
+# Backup files
+*.bak
+*.backup
+*-backup*
+*-old*
+*-copy*
+
+# Cache directories
+node_modules/
+.cache/

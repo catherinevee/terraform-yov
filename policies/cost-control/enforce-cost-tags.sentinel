@@ -1,0 +1,243 @@
+# =============================================================================
+# ENFORCE COST TAGS - COST CONTROL POLICY
+# =============================================================================
+# Ensures all resources have proper cost tracking and management tags
+
+import "tfplan/v2" as tfplan
+import "strings"
+
+# Required cost tracking tags
+required_cost_tags = [
+  "Environment",
+  "CostCenter", 
+  "ManagedBy",
+  "Project",
+]
+
+# Optional but recommended cost tags
+recommended_cost_tags = [
+  "Owner",
+  "Team",
+  "Purpose",
+  "AutoShutdown",
+  "BackupRequired",
+]
+
+# Resources that must have cost tags
+cost_tracked_resources = [
+  "aws_instance",
+  "aws_db_instance",
+  "aws_rds_cluster",
+  "aws_elasticache_cluster",
+  "aws_elasticache_replication_group",
+  "aws_redshift_cluster",
+  "aws_elasticsearch_domain",
+  "aws_opensearch_domain",
+  "aws_emr_cluster",
+  "aws_eks_cluster",
+  "aws_ecs_cluster",
+  "aws_lambda_function",
+  "aws_s3_bucket",
+  "aws_ebs_volume",
+  "aws_efs_file_system",
+  "aws_fsx_lustre_file_system",
+  "aws_fsx_windows_file_system",
+  "aws_nat_gateway",
+  "aws_lb",
+  "aws_elb",
+  "aws_cloudfront_distribution",
+  "aws_route53_zone",
+  "aws_api_gateway_rest_api",
+  "aws_api_gateway_v2_api",
+]
+
+# Valid values for specific tags
+valid_environments = ["dev", "development", "staging", "stage", "prod", "production"]
+valid_cost_centers = ["development", "staging", "production", "shared", "infrastructure", "security"]
+valid_managed_by = ["terraform", "terragrunt", "manual", "ansible", "cloudformation"]
+
+# Get all resources that should have cost tags
+cost_tracked_resource_changes = filter tfplan.resource_changes as _, resource_changes {
+  resource_changes.type in cost_tracked_resources and
+  resource_changes.mode is "managed" and
+  (resource_changes.change.actions contains "create" or
+   resource_changes.change.actions contains "update")
+}
+
+# Function to validate tag value format
+validate_tag_value = func(tag_name, tag_value) {
+  if tag_value is null or tag_value is "" {
+    return false
+  }
+  
+  # Check specific tag validation rules
+  if tag_name is "Environment" {
+    return strings.to_lower(tag_value) in valid_environments
+  }
+  
+  if tag_name is "CostCenter" {
+    return strings.to_lower(tag_value) in valid_cost_centers
+  }
+  
+  if tag_name is "ManagedBy" {
+    return strings.to_lower(tag_value) in valid_managed_by
+  }
+  
+  # For other tags, just check they're not empty
+  return true
+}
+
+# Function to check if resource should be exempt from cost tagging
+is_exempt_from_tagging = func(address, resource_type) {
+  # Exempt certain infrastructure resources that don't directly incur costs
+  exempt_types = [
+    "aws_iam_role",
+    "aws_iam_policy", 
+    "aws_iam_role_policy_attachment",
+    "aws_security_group",
+    "aws_security_group_rule",
+    "aws_vpc",
+    "aws_subnet",
+    "aws_internet_gateway",
+    "aws_route_table",
+    "aws_route",
+    "aws_vpc_endpoint",
+  ]
+  
+  return resource_type in exempt_types
+}
+
+# Validate required cost tags
+validate_required_cost_tags = rule {
+  all cost_tracked_resource_changes as address, rc {
+    # Skip if exempt
+    if is_exempt_from_tagging(address, rc.type) {
+      true
+    } else {
+      tags = rc.change.after.tags else {}
+      
+      # Check all required tags are present and valid
+      all required_cost_tags as tag_name {
+        tag_name in tags and validate_tag_value(tag_name, tags[tag_name]) else {
+          print("COST CONTROL VIOLATION:")
+          print("Resource", address, "missing or invalid required cost tag:", tag_name)
+          print("Resource type:", rc.type)
+          if tag_name in tags {
+            print("Current value:", tags[tag_name])
+            if tag_name is "Environment" {
+              print("Valid values:", valid_environments)
+            } else if tag_name is "CostCenter" {
+              print("Valid values:", valid_cost_centers)
+            } else if tag_name is "ManagedBy" {
+              print("Valid values:", valid_managed_by)
+            }
+          } else {
+            print("Tag is missing entirely")
+          }
+          print("Proper cost tags are required for cost tracking and management.")
+          false
+        }
+      }
+    }
+  }
+}
+
+# Validate AutoShutdown tag for development resources
+validate_autoshutdown_tag = rule {
+  all cost_tracked_resource_changes as address, rc {
+    tags = rc.change.after.tags else {}
+    
+    # Check if this is a development or staging resource
+    is_dev_staging = false
+    if "Environment" in tags {
+      env = strings.to_lower(tags.Environment else "")
+      is_dev_staging = env in ["dev", "development", "staging", "stage"]
+    }
+    
+    # Check address for dev/staging indicators
+    if not is_dev_staging {
+      address_lower = strings.to_lower(address)
+      is_dev_staging = strings.contains(address_lower, "dev") or strings.contains(address_lower, "staging")
+    }
+    
+    # For compute resources in dev/staging, check AutoShutdown tag
+    compute_resources = ["aws_instance", "aws_db_instance", "aws_rds_cluster", "aws_elasticache_cluster"]
+    
+    if is_dev_staging and rc.type in compute_resources {
+      "AutoShutdown" in tags else {
+        print("COST CONTROL WARNING:")
+        print("Development/Staging resource", address, "should have AutoShutdown tag")
+        print("Resource type:", rc.type)
+        print("Environment:", tags.Environment else "unknown")
+        print("AutoShutdown helps reduce costs by stopping resources when not in use.")
+        print("Recommended values: 'enabled', 'nightly', 'weekends', 'disabled'")
+        false
+      }
+    } else {
+      true
+    }
+  }
+}
+
+# Check for cost optimization tags
+validate_cost_optimization_tags = rule {
+  all cost_tracked_resource_changes as address, rc {
+    tags = rc.change.after.tags else {}
+    
+    # For expensive resource types, recommend cost optimization tags
+    expensive_types = ["aws_instance", "aws_db_instance", "aws_elasticache_cluster", "aws_redshift_cluster"]
+    
+    if rc.type in expensive_types {
+      has_cost_info = "CostOptimized" in tags or "CostApproved" in tags or "BudgetAlert" in tags
+      
+      has_cost_info else {
+        print("COST CONTROL RECOMMENDATION:")
+        print("Resource", address, "should have cost optimization tags")
+        print("Resource type:", rc.type)
+        print("Consider adding tags like:")
+        print("- CostOptimized: 'true' or 'false'")
+        print("- BudgetAlert: 'enabled' or 'disabled'")
+        print("- MonitoringLevel: 'basic' or 'enhanced'")
+        true  # This is advisory, so return true
+      }
+    } else {
+      true
+    }
+  }
+}
+
+# Validate project naming consistency
+validate_project_consistency = rule {
+  all cost_tracked_resource_changes as address, rc {
+    tags = rc.change.after.tags else {}
+    
+    if "Project" in tags {
+      project_name = tags.Project
+      
+      # Project name should be consistent with address
+      address_lower = strings.to_lower(address)
+      project_lower = strings.to_lower(project_name)
+      
+      # Check if project name appears in resource address
+      strings.contains(address_lower, project_lower) or
+      strings.contains(project_lower, "terraform-yov") or
+      strings.contains(project_lower, "infrastructure") else {
+        print("COST CONTROL WARNING:")
+        print("Resource", address, "has project tag that doesn't match naming")
+        print("Project tag:", project_name)
+        print("Consider ensuring project names are consistent across resources.")
+        true  # This is advisory
+      }
+    } else {
+      true
+    }
+  }
+}
+
+# Main rule
+main = rule {
+  validate_required_cost_tags and
+  validate_autoshutdown_tag and
+  validate_cost_optimization_tags and
+  validate_project_consistency
+}

@@ -1,0 +1,184 @@
+# =============================================================================
+# ENFORCE EC2 INSTANCE TYPES - COST CONTROL POLICY
+# =============================================================================
+# Restricts EC2 instance types based on environment to control costs
+
+import "tfplan/v2" as tfplan
+import "strings"
+
+# Allowed instance types by environment
+dev_allowed_instances = [
+  "t3.nano",
+  "t3.micro", 
+  "t3.small",
+  "t3.medium",
+  "t2.nano",
+  "t2.micro",
+  "t2.small",
+  "t2.medium",
+]
+
+staging_allowed_instances = [
+  "t3.nano",
+  "t3.micro", 
+  "t3.small",
+  "t3.medium",
+  "t3.large",
+  "t2.nano",
+  "t2.micro",
+  "t2.small",
+  "t2.medium",
+  "t2.large",
+  "m5.large",
+  "m5.xlarge",
+  "c5.large",
+  "c5.xlarge",
+]
+
+prod_allowed_instances = [
+  "t3.medium",
+  "t3.large",
+  "t3.xlarge",
+  "t3.2xlarge",
+  "m5.large",
+  "m5.xlarge", 
+  "m5.2xlarge",
+  "m5.4xlarge",
+  "c5.large",
+  "c5.xlarge",
+  "c5.2xlarge",
+  "c5.4xlarge",
+  "r5.large",
+  "r5.xlarge",
+  "r5.2xlarge",
+]
+
+# Get all EC2 instances from the plan
+ec2_instances = filter tfplan.resource_changes as _, resource_changes {
+  resource_changes.type is "aws_instance" and
+  (resource_changes.mode is "managed" and
+   (resource_changes.change.actions contains "create" or
+    resource_changes.change.actions contains "update"))
+}
+
+# Get all Launch Template instances
+launch_templates = filter tfplan.resource_changes as _, resource_changes {
+  resource_changes.type is "aws_launch_template" and
+  (resource_changes.mode is "managed" and
+   (resource_changes.change.actions contains "create" or
+    resource_changes.change.actions contains "update"))
+}
+
+# Get all AutoScaling Group Launch Configurations
+launch_configs = filter tfplan.resource_changes as _, resource_changes {
+  resource_changes.type is "aws_launch_configuration" and
+  (resource_changes.mode is "managed" and
+   (resource_changes.change.actions contains "create" or
+    resource_changes.change.actions contains "update"))
+}
+
+# Function to determine environment from tags or address
+determine_environment = func(address, tags) {
+  # Check address for environment indicators
+  if strings.contains(strings.to_lower(address), "dev") {
+    return "dev"
+  } else if strings.contains(strings.to_lower(address), "staging") {
+    return "staging"
+  } else if strings.contains(strings.to_lower(address), "prod") {
+    return "prod"
+  }
+  
+  # Check tags for environment
+  if tags is not null {
+    if "Environment" in tags {
+      env = strings.to_lower(tags.Environment else "")
+      if strings.contains(env, "dev") {
+        return "dev"
+      } else if strings.contains(env, "staging") {
+        return "staging"
+      } else if strings.contains(env, "prod") {
+        return "prod"
+      }
+    }
+  }
+  
+  # Default to production rules if unknown
+  return "prod"
+}
+
+# Function to get allowed instances for environment
+get_allowed_instances = func(environment) {
+  if environment is "dev" {
+    return dev_allowed_instances
+  } else if environment is "staging" {
+    return staging_allowed_instances
+  } else {
+    return prod_allowed_instances
+  }
+}
+
+# Validate EC2 instances
+validate_ec2_instances = rule {
+  all ec2_instances as address, rc {
+    instance_type = rc.change.after.instance_type else ""
+    tags = rc.change.after.tags else {}
+    
+    environment = determine_environment(address, tags)
+    allowed_instances = get_allowed_instances(environment)
+    
+    instance_type in allowed_instances else {
+      print("COST CONTROL VIOLATION:")
+      print("EC2 instance", address, "uses instance type", instance_type)
+      print("Environment:", environment)
+      print("Allowed instance types for", environment + ":", allowed_instances)
+      print("Consider using a smaller instance type to reduce costs.")
+      false
+    }
+  }
+}
+
+# Validate Launch Templates
+validate_launch_templates = rule {
+  all launch_templates as address, rc {
+    instance_type = rc.change.after.instance_type else ""
+    tags = rc.change.after.tags else {}
+    
+    environment = determine_environment(address, tags)
+    allowed_instances = get_allowed_instances(environment)
+    
+    instance_type in allowed_instances else {
+      print("COST CONTROL VIOLATION:")
+      print("Launch template", address, "uses instance type", instance_type)
+      print("Environment:", environment)
+      print("Allowed instance types for", environment + ":", allowed_instances)
+      print("Consider using a smaller instance type to reduce costs.")
+      false
+    }
+  }
+}
+
+# Validate Launch Configurations
+validate_launch_configs = rule {
+  all launch_configs as address, rc {
+    instance_type = rc.change.after.instance_type else ""
+    
+    environment = determine_environment(address, {})
+    allowed_instances = get_allowed_instances(environment)
+    
+    instance_type in allowed_instances else {
+      print("COST CONTROL VIOLATION:")
+      print("Launch configuration", address, "uses instance type", instance_type)
+      print("Environment:", environment)
+      print("Allowed instance types for", environment + ":", allowed_instances)
+      print("Consider using a smaller instance type to reduce costs.")
+      false
+    }
+  }
+}
+
+# Main rule
+main = rule {
+  validate_ec2_instances and
+  validate_launch_templates and
+  validate_launch_configs
+}

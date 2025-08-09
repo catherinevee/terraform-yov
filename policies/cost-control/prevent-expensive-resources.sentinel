@@ -1,0 +1,249 @@
+# =============================================================================
+# PREVENT EXPENSIVE RESOURCES - COST CONTROL POLICY
+# =============================================================================
+# Blocks deployment of expensive AWS resources that could lead to high costs
+
+import "tfplan/v2" as tfplan
+import "strings"
+
+# Prohibited expensive resources
+prohibited_resources = [
+  "aws_redshift_cluster",
+  "aws_elasticsearch_domain",
+  "aws_opensearch_domain",
+  "aws_emr_cluster",
+  "aws_sagemaker_notebook_instance",
+  "aws_fsx_lustre_file_system",
+  "aws_fsx_windows_file_system",
+  "aws_workspaces_workspace",
+  "aws_directory_service_directory",
+]
+
+# Expensive instance types that should be blocked
+prohibited_instance_types = [
+  # Large EC2 instances
+  "r5.8xlarge",
+  "r5.12xlarge",
+  "r5.16xlarge",
+  "r5.24xlarge",
+  "m5.8xlarge",
+  "m5.12xlarge",
+  "m5.16xlarge",
+  "m5.24xlarge",
+  "c5.9xlarge",
+  "c5.12xlarge",
+  "c5.18xlarge",
+  "c5.24xlarge",
+  
+  # GPU instances
+  "p3.2xlarge",
+  "p3.8xlarge",
+  "p3.16xlarge",
+  "p4d.24xlarge",
+  "g4dn.xlarge",
+  "g4dn.2xlarge",
+  "g4dn.4xlarge",
+  "g4dn.8xlarge",
+  "g4dn.12xlarge",
+  "g4dn.16xlarge",
+  
+  # High memory instances
+  "x1.16xlarge",
+  "x1.32xlarge",
+  "x1e.xlarge",
+  "x1e.2xlarge",
+  "x1e.4xlarge",
+  "x1e.8xlarge",
+  "x1e.16xlarge",
+  "x1e.32xlarge",
+  
+  # High performance computing
+  "c5n.4xlarge",
+  "c5n.9xlarge",
+  "c5n.18xlarge",
+  "m5n.8xlarge",
+  "m5n.12xlarge",
+  "m5n.16xlarge",
+  "m5n.24xlarge",
+]
+
+# Expensive RDS instance classes
+prohibited_rds_instances = [
+  "db.r5.8xlarge",
+  "db.r5.12xlarge",
+  "db.r5.16xlarge",
+  "db.r5.24xlarge",
+  "db.m5.8xlarge",
+  "db.m5.12xlarge",
+  "db.m5.16xlarge",
+  "db.m5.24xlarge",
+  "db.x1.16xlarge",
+  "db.x1.32xlarge",
+  "db.x1e.xlarge",
+  "db.x1e.2xlarge",
+  "db.x1e.4xlarge",
+  "db.x1e.8xlarge",
+  "db.x1e.16xlarge",
+  "db.x1e.32xlarge",
+]
+
+# Get all resource changes
+all_resources = filter tfplan.resource_changes as _, resource_changes {
+  resource_changes.mode is "managed" and
+  (resource_changes.change.actions contains "create" or
+   resource_changes.change.actions contains "update")
+}
+
+# Function to determine if resource should be allowed based on environment
+is_allowed_environment = func(address, tags) {
+  # Check if this is explicitly marked as production
+  if strings.contains(strings.to_lower(address), "prod") {
+    return true
+  }
+  
+  if tags is not null {
+    if "Environment" in tags {
+      env = strings.to_lower(tags.Environment else "")
+      if strings.contains(env, "prod") {
+        return true
+      }
+    }
+    
+    # Check for emergency or special approval tags
+    if "CostApproved" in tags {
+      approved = strings.to_lower(tags.CostApproved else "")
+      if approved is "true" or approved is "yes" {
+        return true
+      }
+    }
+  }
+  
+  return false
+}
+
+# Check for prohibited resource types
+validate_resource_types = rule {
+  all all_resources as address, rc {
+    rc.type not in prohibited_resources else {
+      tags = rc.change.after.tags else {}
+      allowed = is_allowed_environment(address, tags)
+      
+      allowed else {
+        print("COST CONTROL VIOLATION:")
+        print("Prohibited expensive resource type:", rc.type)
+        print("Resource:", address)
+        print("This resource type can lead to high costs.")
+        print("If this resource is required, add tag 'CostApproved = true' and get approval.")
+        false
+      }
+    }
+  }
+}
+
+# Check for prohibited EC2 instance types
+validate_ec2_instance_types = rule {
+  all all_resources as address, rc {
+    if rc.type is "aws_instance" or rc.type is "aws_launch_template" or rc.type is "aws_launch_configuration" {
+      instance_type = rc.change.after.instance_type else ""
+      tags = rc.change.after.tags else {}
+      
+      instance_type not in prohibited_instance_types else {
+        allowed = is_allowed_environment(address, tags)
+        
+        allowed else {
+          print("COST CONTROL VIOLATION:")
+          print("Prohibited expensive instance type:", instance_type)
+          print("Resource:", address)
+          print("This instance type can lead to very high costs.")
+          print("Consider using a smaller instance type or add 'CostApproved = true' tag with approval.")
+          false
+        }
+      }
+    } else {
+      true
+    }
+  }
+}
+
+# Check for prohibited RDS instance types
+validate_rds_instance_types = rule {
+  all all_resources as address, rc {
+    if rc.type is "aws_db_instance" {
+      instance_class = rc.change.after.instance_class else ""
+      tags = rc.change.after.tags else {}
+      
+      instance_class not in prohibited_rds_instances else {
+        allowed = is_allowed_environment(address, tags)
+        
+        allowed else {
+          print("COST CONTROL VIOLATION:")
+          print("Prohibited expensive RDS instance class:", instance_class)
+          print("Resource:", address)
+          print("This instance class can lead to very high database costs.")
+          print("Consider using a smaller instance class or add 'CostApproved = true' tag with approval.")
+          false
+        }
+      }
+    } else {
+      true
+    }
+  }
+}
+
+# Check for excessive EBS volume sizes
+validate_ebs_volumes = rule {
+  all all_resources as address, rc {
+    if rc.type is "aws_ebs_volume" {
+      size = rc.change.after.size else 0
+      volume_type = rc.change.after.type else "gp2"
+      tags = rc.change.after.tags else {}
+      
+      # Set limits based on volume type
+      max_size = 1000  # Default max size in GB
+      if volume_type is "io1" or volume_type is "io2" {
+        max_size = 500  # Lower limit for expensive IOPS volumes
+      }
+      
+      size <= max_size else {
+        allowed = is_allowed_environment(address, tags)
+        
+        allowed else {
+          print("COST CONTROL VIOLATION:")
+          print("EBS volume size", size, "GB exceeds limit of", max_size, "GB")
+          print("Volume type:", volume_type)
+          print("Resource:", address)
+          print("Large volumes can lead to high storage costs.")
+          print("Consider using smaller volumes or add 'CostApproved = true' tag with approval.")
+          false
+        }
+      }
+    } else {
+      true
+    }
+  }
+}
+
+# Check for excessive NAT Gateway usage
+validate_nat_gateways = rule {
+  nat_gateways = filter all_resources as address, rc {
+    rc.type is "aws_nat_gateway"
+  }
+  
+  length(nat_gateways) <= 3 else {
+    print("COST CONTROL WARNING:")
+    print("Multiple NAT Gateways detected:", length(nat_gateways))
+    print("Each NAT Gateway costs ~$45/month.")
+    print("Consider using a single NAT Gateway for non-production environments.")
+    print("Current NAT Gateways:", keys(nat_gateways))
+    false
+  }
+}
+
+# Main rule
+main = rule {
+  validate_resource_types and
+  validate_ec2_instance_types and
+  validate_rds_instance_types and
+  validate_ebs_volumes and
+  validate_nat_gateways
+}
