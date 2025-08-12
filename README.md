@@ -77,6 +77,25 @@ The infrastructure supports three primary environments:
 ## Quick Start
 
 ### Prerequisites
+## AWS Backend Resource Prerequisites
+
+This project requires the following AWS resources for Terragrunt remote state and locking:
+
+- **S3 Bucket**: `terragrunt-state-123456789012` (replace with your AWS Account ID)
+- **DynamoDB Table**: `terragrunt-state-locks-123456789012` (replace with your AWS Account ID)
+
+These must exist and be accessible by the CI/CD runner and any user running Terragrunt locally.
+
+### Required IAM Permissions
+
+The CI/CD runner and users must have the following IAM permissions:
+
+- `s3:ListBucket`, `s3:GetObject`, `s3:PutObject`, `s3:DeleteObject` on the state bucket
+- `dynamodb:GetItem`, `dynamodb:PutItem`, `dynamodb:DeleteItem`, `dynamodb:DescribeTable` on the lock table
+
+For OIDC-based authentication, ensure the GitHub Actions role has these permissions attached.
+
+See `.github/workflows/terragrunt.yml` for pre-flight resource checks.
 
 Ensure you have the following tools installed:
 
@@ -470,25 +489,49 @@ resource "aws_secretsmanager_secret" "app_secrets" {
 
 ## CI/CD Pipeline
 
+
 ### GitHub Actions Workflows
 
 The repository includes comprehensive GitHub Actions workflows in `.github/workflows/`:
 
-1. **terragrunt-deploy.yml**: Main deployment pipeline with security controls
-2. **security-monitoring.yml**: Comprehensive security scanning and compliance
-3. **pull-request-validation.yml**: PR validation with security checks
-4. **environment-promotion.yml**: Secure environment promotion workflow
-5. **infrastructure-diagrams.yml**: Automated infrastructure diagram generation
-6. **infrastructure-testing.yml**: Multi-level testing framework
-7. **release-management.yml**: Complete release management pipeline
+1. **terragrunt.yml**: Parameterized Terragrunt validation and plan pipeline
+2. **terragrunt-deploy.yml**: Main deployment pipeline with security controls
+3. **security-monitoring.yml**: Comprehensive security scanning and compliance
+4. **pull-request-validation.yml**: PR validation with security checks
+5. **environment-promotion.yml**: Secure environment promotion workflow
+6. **infrastructure-diagrams.yml**: Automated infrastructure diagram generation
+7. **infrastructure-testing.yml**: Multi-level testing framework
+8. **release-management.yml**: Complete release management pipeline
 
-### Workflow Features
+#### terragrunt.yml Parameterization
+
+The `terragrunt.yml` workflow is fully parameterized for maximum flexibility and security:
+
+- **Environments**: Set via repository variable `TERRAGRUNT_ENVIRONMENTS` (default: `dev prod`)
+- **AWS Region**: Set via repository variable `AWS_REGION` (default: `eu-west-2`)
+- **S3 Bucket**: Set via secret `TERRAGRUNT_S3_BUCKET` (default: `terragrunt-state-123456789012`)
+- **DynamoDB Table**: Set via secret `TERRAGRUNT_DYNAMODB_TABLE` (default: `terragrunt-state-locks-123456789012`)
+
+You can override these values in your repository settings under **Variables** and **Secrets**. This allows you to reuse the workflow across multiple environments and accounts without editing the workflow file.
+
+#### Example: Setting Variables and Secrets
+
+1. Go to your repository **Settings > Variables** and add:
+   - `TERRAGRUNT_ENVIRONMENTS` (e.g., `dev staging prod`)
+   - `AWS_REGION` (e.g., `us-east-1`)
+
+2. Go to **Settings > Secrets and variables > Actions > Secrets** and add:
+   - `TERRAGRUNT_S3_BUCKET` (e.g., `my-company-terragrunt-state`)
+   - `TERRAGRUNT_DYNAMODB_TABLE` (e.g., `my-company-terragrunt-locks`)
+
+#### Workflow Features
 
 - **Security-First Design**: Every workflow includes security scanning
 - **Cost Monitoring**: Infracost integration for cost impact analysis
 - **Policy Compliance**: OPA and Sentinel policy validation
 - **Multi-Environment Support**: Automated deployment across environments
 - **Approval Gates**: Manual approval requirements for production
+- **Parameterization**: Easily adjust environments, regions, and AWS resources via repo settings
 
 ### Manual Deployment
 

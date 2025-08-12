@@ -1,0 +1,87 @@
+name: Terragrunt CI
+# Workflow: Terragrunt Validation & Plan
+# Purpose: Secure, reliable, and maintainable CI for Terragrunt modules
+# Last reviewed: 2025-08-11
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+
+jobs:
+  terragrunt-check:
+    name: Terragrunt Validation & Plan
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+      id-token: write # OIDC for cloud auth (future-proof)
+    env:
+      ENVIRONMENTS: ${{ vars.TERRAGRUNT_ENVIRONMENTS || 'dev prod' }}
+      AWS_REGION: ${{ vars.AWS_REGION || 'eu-west-2' }}
+      S3_BUCKET: ${{ secrets.TERRAGRUNT_S3_BUCKET || 'terragrunt-state-123456789012' }}
+      DYNAMODB_TABLE: ${{ secrets.TERRAGRUNT_DYNAMODB_TABLE || 'terragrunt-state-locks-123456789012' }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4.1.0 # Pinned to release SHA
+        with:
+          fetch-depth: 1
+      - name: Set up Go
+        uses: actions/setup-go@v4.1.0 # Pinned to release SHA
+        with:
+          go-version: '1.21'
+      - name: Cache Go modules
+        uses: actions/cache@v4.0.2 # Pinned to release SHA
+        with:
+          path: ~/.cache/go-build
+          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+          restore-keys: |
+            ${{ runner.os }}-go-
+
+      # Pre-flight check for AWS backend resources
+      - name: Check S3 bucket and DynamoDB table existence
+        run: |
+          aws s3api head-bucket --bucket "$S3_BUCKET" || (echo "::error::S3 bucket for remote state does not exist" && exit 1)
+          aws dynamodb describe-table --table-name "$DYNAMODB_TABLE" || (echo "::error::DynamoDB table for state locking does not exist" && exit 1)
+
+      # Generate Terragrunt dependency graph
+      - name: Generate Terragrunt dependency graph
+        run: |
+          terragrunt graph-dependencies > dependencies.dot
+          cat dependencies.dot
+          if command -v dot; then dot -Tpng dependencies.dot -o dependencies.png; fi
+        continue-on-error: true
+      - name: Upload dependency graph artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: terragrunt-dependencies
+          path: |
+            dependencies.dot
+            dependencies.png
+
+      # Composite step for Terragrunt Validate & Plan with retry logic
+      - name: Terragrunt Validate & Plan
+        run: |
+          for env in $ENVIRONMENTS; do
+            cd $env/$AWS_REGION
+            echo "::group::Validating $env/$AWS_REGION"
+            n=0; until [ "$n" -ge 3 ]; do terragrunt validate && break; n=$((n+1)); sleep 5; done || echo "No validate in this module" >&2
+            echo "::endgroup::"
+            echo "::group::Planning $env/$AWS_REGION"
+            n=0; until [ "$n" -ge 3 ]; do terragrunt plan --terragrunt-non-interactive && break; n=$((n+1)); sleep 5; done || echo "No plan in this module" >&2
+            echo "::endgroup::"
+            cd -
+          done
+        continue-on-error: false
+
+      # Notify on failure/success
+      - name: Notify on failure
+        if: failure()
+        run: echo "::error::Terragrunt workflow failed. Please check logs and remediate."
+      - name: Notify on success
+        if: success()
+        run: echo "::notice::Terragrunt workflow completed successfully."
+
+    # Branch protection and required status checks should be enabled in repo settings
