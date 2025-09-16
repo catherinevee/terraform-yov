@@ -58,9 +58,9 @@ terraform-yov/
 
 | Environment | Memory | Rate Limit | DynamoDB | X-Ray | Logs |
 |-------------|--------|------------|----------|-------|------|
-| `dev` | 512 MB | 1K/sec | On-Demand | ❌ | 7d |
-| `staging` | 1 GB | 5K/sec | Provisioned | ✅ | 30d |
-| `prod` | 2 GB | 10K/sec | Auto-scale | ✅ | 90d |
+| `dev` | 512 MB | 1K/sec | On-Demand | No | 7d |
+| `staging` | 1 GB | 5K/sec | Provisioned | Yes | 30d |
+| `prod` | 2 GB | 10K/sec | Auto-scale | Yes | 90d |
 
 ## API Usage Plans
 
