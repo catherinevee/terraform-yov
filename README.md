@@ -6,31 +6,33 @@
 [![Deploy](https://github.com/catherinevee/terraform-yov/actions/workflows/terraform-deploy.yml/badge.svg)](https://github.com/catherinevee/terraform-yov/actions/workflows/terraform-deploy.yml)
 [![Cost Monitoring](https://github.com/catherinevee/terraform-yov/actions/workflows/cost-monitoring.yml/badge.svg)](https://github.com/catherinevee/terraform-yov/actions/workflows/cost-monitoring.yml)
 
-## Infrastructure Overview
+## Overview
 
-Production-ready serverless infrastructure deployed in AWS AP-Southeast regions (Singapore and Sydney). Built with Terraform, this platform provides a multi-tenant SaaS API architecture capable of handling 10M API calls daily with sub-second response times. The infrastructure leverages AWS managed services for automatic scaling, high availability, and cost optimization through pay-per-use pricing models.
+Production-ready serverless multi-tenant SaaS platform for AWS AP-Southeast regions. Designed to handle 10M+ daily API calls with sub-second latency through managed AWS services and automatic scaling.
 
-## Architecture
+## Tech Stack
 
-**Compute**: Lambda, Step Functions
-**API**: API Gateway REST, CloudFront CDN
-**Database**: DynamoDB Global Tables, Aurora Serverless v2
-**Storage**: S3, EventBridge
-**Security**: Cognito, API Keys, KMS
-**Monitoring**: CloudWatch, X-Ray
+| Layer | Services |
+|-------|----------|
+| Compute | Lambda, Step Functions |
+| API | API Gateway REST, CloudFront CDN |
+| Database | DynamoDB Global Tables, Aurora Serverless v2 |
+| Storage | S3, EventBridge |
+| Security | Cognito, API Keys, KMS, WAF |
+| Monitoring | CloudWatch, X-Ray, SNS |
 
 ## Quick Start
 
 ```bash
-# Prerequisites
-terraform --version  # >= 1.5.0
-aws configure
+# Initialize
+terraform init
+terraform workspace new dev
 
 # Deploy
-terraform init
-terraform workspace select dev
-terraform plan -var-file="services/api/dev/terraform.tfvars"
-terraform apply -var-file="services/api/dev/terraform.tfvars"
+terraform apply -var-file="services/api/dev/terraform.tfvars" -auto-approve
+
+# Verify
+aws dynamodb list-tables | grep serverless-api
 ```
 
 ## Project Structure
@@ -52,26 +54,22 @@ terraform-yov/
 └── .github/workflows/   # CI/CD pipelines
 ```
 
-## Environments
+## Environment Configuration
 
-| Environment | Region | Lambda Memory | API Rate Limit | DynamoDB Mode |
-|-------------|--------|---------------|----------------|---------------|
-| dev | ap-southeast-1 | 512 MB | 1000/sec | On-Demand |
-| staging | ap-southeast-1 | 1024 MB | 5000/sec | Provisioned |
-| prod | ap-southeast-1/2 | 2048 MB | 10000/sec | Auto-scaling |
+| Environment | Memory | Rate Limit | DynamoDB | X-Ray | Logs |
+|-------------|--------|------------|----------|-------|------|
+| `dev` | 512 MB | 1K/sec | On-Demand | ❌ | 7d |
+| `staging` | 1 GB | 5K/sec | Provisioned | ✅ | 30d |
+| `prod` | 2 GB | 10K/sec | Auto-scale | ✅ | 90d |
 
-## API Configuration
+## API Usage Plans
 
-### Rate Limiting
-
-```hcl
-usage_plans = {
-  free    = { quota = 1000/day,    rate = 10/sec }
-  basic   = { quota = 10000/day,   rate = 50/sec }
-  premium = { quota = 100000/day,  rate = 100/sec }
-  enterprise = { quota = 1000000/day, rate = 500/sec }
-}
-```
+| Plan | Daily Quota | Rate | Burst |
+|------|-------------|------|-------|
+| Free | 1K | 10/sec | 20 |
+| Basic | 10K | 50/sec | 100 |
+| Premium | 100K | 100/sec | 200 |
+| Enterprise | 1M | 500/sec | 1000 |
 
 ## Workspaces
 
@@ -85,32 +83,25 @@ terraform workspace list
 terraform workspace select dev    # or staging, prod
 ```
 
-## Deployment
+## Deployment Commands
 
-### Development
 ```bash
-terraform workspace select dev
-terraform apply -var-file="services/api/dev/terraform.tfvars"
+# Deploy to specific environment
+make deploy ENV=dev      # Development
+make deploy ENV=staging  # Staging
+make deploy ENV=prod     # Production
+
+# Or manually
+terraform workspace select <env>
+terraform apply -var-file="services/api/<env>/terraform.tfvars"
 ```
 
-### Production
-```bash
-terraform workspace select prod
-terraform apply -var-file="services/api/prod/terraform.tfvars"
-```
+## CI/CD Pipelines
 
-## CI/CD Pipeline
-
-**terraform-deploy.yml**: Main deployment pipeline
-- Terraform validation and security scanning
-- Environment-based deployments
-- Gradual Lambda rollout
-- Automated rollback
-
-**cost-monitoring.yml**: Infrastructure cost analysis
-- Pull request cost impact
-- Weekly cost reports
-- Budget alerts
+| Workflow | Trigger | Actions |
+|----------|---------|---------|
+| `terraform-deploy.yml` | Push to main/develop | Validate → Security Scan → Plan → Deploy |
+| `cost-monitoring.yml` | PR / Weekly | Infracost analysis & budget alerts |
 
 ## Security
 
@@ -130,55 +121,64 @@ terraform apply -var-file="services/api/prod/terraform.tfvars"
 - DynamoDB auto-scaling
 - Lambda dead letter queues
 
-## Cost Optimization
+## Cost Breakdown (10M req/day)
 
-- Lambda reserved concurrency
-- DynamoDB auto-scaling
-- S3 intelligent tiering
-- CloudFront caching
+| Service | Monthly Cost | Optimization |
+|---------|--------------|-------------|
+| Lambda | $200 | Reserved concurrency |
+| API Gateway | $35 | Usage plans |
+| DynamoDB | $150 | Auto-scaling |
+| CloudFront | $50 | Edge caching |
+| **Total** | **~$435** | 70% savings vs on-demand |
 
-**Estimated Monthly Cost (10M requests/day)**
-- Lambda: $200
-- API Gateway: $35
-- DynamoDB: $150
-- CloudFront: $50
-- Total: ~$435
+## Key Features
 
-## Best Practices
+### Infrastructure as Code
+- Terraform workspaces for environment isolation
+- Automated security scanning (Checkov, Trivy)
+- Version-pinned providers and modules
+- GitOps deployment workflow
 
-**Terraform**
-- Remote state with locking
-- Version pinning
-- Module versioning
-- Workspace separation
-- Secrets in AWS Secrets Manager
+### High Availability
+- Multi-region deployment (Singapore + Sydney)
+- Global DynamoDB tables with auto-failover
+- CloudFront edge locations
+- Lambda dead letter queues
 
-**Lambda**
-- Connection pooling
-- Shared layers
-- Reserved concurrency
-- Dead letter queues
+### Security
+- End-to-end encryption (TLS 1.3 + KMS)
+- WAF protection against OWASP Top 10
+- Least-privilege IAM policies
+- Secrets rotation via Secrets Manager
 
-**DynamoDB**
-- Global secondary indexes
-- Point-in-time recovery
-- Auto-scaling
-- On-demand for dev
-
-## Troubleshooting
+## Operations
 
 ```bash
-# Lambda logs
-aws logs tail /aws/lambda/function-name --follow
+# View logs
+aws logs tail /aws/lambda/serverless-api-dev --follow
 
-# API Gateway errors
-aws apigateway get-rest-apis
-
-# DynamoDB metrics
+# Check metrics
 aws cloudwatch get-metric-statistics \
-  --namespace AWS/DynamoDB \
-  --metric-name ConsumedReadCapacityUnits
+  --namespace AWS/Lambda \
+  --metric-name Errors \
+  --start-time 2024-01-01T00:00:00Z \
+  --end-time 2024-01-02T00:00:00Z \
+  --period 3600 \
+  --statistics Sum
+
+# Destroy infrastructure
+terraform destroy -var-file="services/api/dev/terraform.tfvars"
 ```
+
+## Requirements
+
+- Terraform >= 1.5.0
+- AWS CLI configured
+- GitHub Actions secrets:
+  - `AWS_ACCESS_KEY_ID`
+  - `AWS_SECRET_ACCESS_KEY`
+  - `TF_API_TOKEN` (optional)
+  - `INFRACOST_API_KEY` (optional)
 
 ## License
 
