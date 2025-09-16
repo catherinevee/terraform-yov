@@ -1,11 +1,13 @@
-# Serverless REST API Platform
+# Terraform-Yov / AP Southeast
 
 [![Terraform](https://img.shields.io/badge/terraform-%3E%3D1.5.0-623CE4.svg?logo=terraform)](https://www.terraform.io/)
 [![AWS Provider](https://img.shields.io/badge/AWS-%7E%3E5.31.0-FF9900.svg?logo=amazon-aws)](https://registry.terraform.io/providers/hashicorp/aws/latest)
 [![Deploy](https://github.com/catherinevee/terraform-yov/actions/workflows/terraform-deploy.yml/badge.svg)](https://github.com/catherinevee/terraform-yov/actions/workflows/terraform-deploy.yml)
 [![Cost Monitoring](https://github.com/catherinevee/terraform-yov/actions/workflows/cost-monitoring.yml/badge.svg)](https://github.com/catherinevee/terraform-yov/actions/workflows/cost-monitoring.yml)
 
-Multi-tenant SaaS API platform on AWS. Handles 10M API calls/day with sub-second response times.
+## Infrastructure Overview
+
+Production-ready serverless infrastructure deployed in AWS AP-Southeast regions (Singapore and Sydney). Built with Terraform, this platform provides a multi-tenant SaaS API architecture capable of handling 10M API calls daily with sub-second response times. The infrastructure leverages AWS managed services for automatic scaling, high availability, and cost optimization through pay-per-use pricing models.
 
 ## Architecture
 
