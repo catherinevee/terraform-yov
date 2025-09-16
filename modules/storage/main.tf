@@ -114,7 +114,7 @@ resource "aws_s3_bucket_public_access_block" "buckets" {
 }
 
 resource "aws_s3_bucket_intelligent_tiering_configuration" "buckets" {
-  for_each = var.environment == "prod" ? local.buckets : tomap({})
+  for_each = var.environment == "prod" ? local.buckets : {}
 
   bucket = aws_s3_bucket.buckets[each.key].id
   name   = "${each.key}-intelligent-tiering"

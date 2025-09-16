@@ -118,8 +118,7 @@ module "database" {
       attributes = [
         { name = "request_id", type = "S" },
         { name = "timestamp", type = "N" },
-        { name = "tenant_id", type = "S" },
-        { name = "api_key", type = "S" }
+        { name = "tenant_id", type = "S" }
       ]
       global_secondary_indexes = [
         {
