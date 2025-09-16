@@ -12,7 +12,10 @@
       "Bash(git push:*)",
       "Bash(gh run list:*)",
       "Bash(gh run view:*)",
-      "Bash(gh workflow:*)"
+      "Bash(gh workflow:*)",
+      "Bash(aws configure:*)",
+      "Bash(gh secret set:*)",
+      "Bash(gh secret:*)"
     ],
     "deny": [],
     "ask": []
