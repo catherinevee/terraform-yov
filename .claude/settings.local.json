@@ -15,7 +15,15 @@
       "Bash(gh workflow:*)",
       "Bash(aws configure:*)",
       "Bash(gh secret set:*)",
-      "Bash(gh secret:*)"
+      "Bash(gh secret:*)",
+      "Bash(aws s3:*)",
+      "Bash(aws lambda list-functions:*)",
+      "Bash(aws dynamodb list-tables:*)",
+      "Bash(aws sts get-caller-identity:*)",
+      "Bash(aws iam list-open-id-connect-providers:*)",
+      "Bash(aws iam create-role:*)",
+      "Bash(aws iam attach-role-policy:*)",
+      "Bash(chmod:*)"
     ],
     "deny": [],
     "ask": []

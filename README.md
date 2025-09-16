@@ -52,6 +52,9 @@ terraform-yov/
 │       ├── dev/         # Development environment
 │       ├── staging/     # Staging environment
 │       └── prod/        # Production environment
+├── scripts/             # Utility scripts
+│   ├── setup-oidc.sh    # Setup AWS OIDC for GitHub
+│   └── cleanup-oidc.sh  # Remove OIDC infrastructure
 └── .github/workflows/   # CI/CD pipelines
 ```
 
@@ -71,6 +74,30 @@ terraform-yov/
 | Basic | 10K | 50/sec | 100 |
 | Premium | 100K | 100/sec | 200 |
 | Enterprise | 1M | 500/sec | 1000 |
+
+## Security
+
+### GitHub OIDC Authentication
+
+This project uses AWS IAM OIDC for secure, keyless authentication from GitHub Actions. No long-lived AWS credentials are stored in GitHub secrets.
+
+#### Setup OIDC
+
+```bash
+# Run setup script
+bash scripts/setup-oidc.sh
+
+# Or manually create role with PowerUserAccess
+aws iam create-role --role-name terraform-yov-github-actions \
+  --assume-role-policy-document file://trust-policy.json
+```
+
+#### Cleanup OIDC
+
+```bash
+# Remove OIDC infrastructure
+bash scripts/cleanup-oidc.sh
+```
 
 ## Workspaces
 
@@ -104,7 +131,7 @@ terraform apply -var-file="services/api/<env>/terraform.tfvars"
 | `terraform-deploy.yml` | Push to main/develop | Validate → Security Scan → Plan → Deploy |
 | `cost-monitoring.yml` | PR / Weekly | Infracost analysis & budget alerts |
 
-## Security
+## Infrastructure Security
 
 - Encryption at rest (KMS)
 - TLS 1.3 in transit
@@ -112,6 +139,8 @@ terraform apply -var-file="services/api/<env>/terraform.tfvars"
 - API key authentication
 - Cognito user pools
 - Least-privilege IAM
+- OIDC authentication for CI/CD
+- No long-lived credentials
 
 ## Monitoring
 
@@ -139,6 +168,7 @@ terraform apply -var-file="services/api/<env>/terraform.tfvars"
 - Automated security scanning (Checkov, Trivy)
 - Version-pinned providers and modules
 - GitOps deployment workflow
+- AWS GitHub OIDC for secure authentication
 
 ### High Availability
 - Multi-region deployment (Singapore + Sydney)
@@ -176,10 +206,10 @@ terraform destroy -var-file="services/api/dev/terraform.tfvars"
 - Terraform >= 1.5.0
 - AWS CLI configured
 - AWS IAM OIDC Provider for GitHub Actions
-- IAM Role: `terraform-yov-github-actions`
+- IAM Role: `terraform-yov-github-actions` (created by `scripts/setup-oidc.sh`)
 - GitHub Actions secrets:
-  - `TF_API_TOKEN` (optional)
-  - `INFRACOST_API_KEY` (optional)
+  - `TF_API_TOKEN` (optional for Terraform Cloud)
+  - `INFRACOST_API_KEY` (optional for cost analysis)
 
 ## License
 
