@@ -2,7 +2,7 @@
 
 [![Terraform](https://img.shields.io/badge/terraform-%3E%3D1.5.0-623CE4.svg?logo=terraform)](https://www.terraform.io/)
 [![AWS Provider](https://img.shields.io/badge/AWS-%7E%3E5.31.0-FF9900.svg?logo=amazon-aws)](https://registry.terraform.io/providers/hashicorp/aws/latest)
-[![Workspaces](https://img.shields.io/badge/Workspaces-Enabled-success.svg?logo=terraform)](https://developer.hashicorp.com/terraform/cli/workspaces)
+[![Workspaces](https://img.shields.io/badge/Workspaces-Enabled-success.svg?logo=terraform)](#workspaces)
 [![Deploy](https://github.com/catherinevee/terraform-yov/actions/workflows/terraform-deploy.yml/badge.svg)](https://github.com/catherinevee/terraform-yov/actions/workflows/terraform-deploy.yml)
 [![Cost Monitoring](https://github.com/catherinevee/terraform-yov/actions/workflows/cost-monitoring.yml/badge.svg)](https://github.com/catherinevee/terraform-yov/actions/workflows/cost-monitoring.yml)
 
@@ -71,6 +71,18 @@ usage_plans = {
   premium = { quota = 100000/day,  rate = 100/sec }
   enterprise = { quota = 1000000/day, rate = 500/sec }
 }
+```
+
+## Workspaces
+
+This project uses Terraform workspaces for environment isolation. Each workspace maintains separate state and automatically configures environment-specific settings.
+
+```bash
+# List available workspaces
+terraform workspace list
+
+# Create/select a workspace
+terraform workspace select dev    # or staging, prod
 ```
 
 ## Deployment
