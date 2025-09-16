@@ -30,31 +30,31 @@ output "dynamodb_stream_arns" {
 
 output "aurora_cluster_endpoint" {
   description = "Aurora cluster endpoint"
-  value       = var.enable_aurora ? aws_rds_cluster.aurora_serverless[0].endpoint : null
+  value       = var.enable_aurora && length(var.vpc_subnet_ids) > 0 ? aws_rds_cluster.aurora_serverless[0].endpoint : null
 }
 
 output "aurora_cluster_reader_endpoint" {
   description = "Aurora cluster reader endpoint"
-  value       = var.enable_aurora ? aws_rds_cluster.aurora_serverless[0].reader_endpoint : null
+  value       = var.enable_aurora && length(var.vpc_subnet_ids) > 0 ? aws_rds_cluster.aurora_serverless[0].reader_endpoint : null
 }
 
 output "aurora_cluster_id" {
   description = "Aurora cluster ID"
-  value       = var.enable_aurora ? aws_rds_cluster.aurora_serverless[0].id : null
+  value       = var.enable_aurora && length(var.vpc_subnet_ids) > 0 ? aws_rds_cluster.aurora_serverless[0].id : null
 }
 
 output "aurora_database_name" {
   description = "Aurora database name"
-  value       = var.enable_aurora ? aws_rds_cluster.aurora_serverless[0].database_name : null
+  value       = var.enable_aurora && length(var.vpc_subnet_ids) > 0 ? aws_rds_cluster.aurora_serverless[0].database_name : null
 }
 
 output "aurora_secret_arn" {
   description = "Aurora password secret ARN"
-  value       = var.enable_aurora ? aws_secretsmanager_secret.aurora_password[0].arn : null
+  value       = var.enable_aurora && length(var.vpc_subnet_ids) > 0 ? aws_secretsmanager_secret.aurora_password[0].arn : null
   sensitive   = true
 }
 
 output "aurora_security_group_id" {
   description = "Aurora security group ID"
-  value       = var.enable_aurora ? aws_security_group.aurora[0].id : null
+  value       = var.enable_aurora && length(var.vpc_subnet_ids) > 0 ? aws_security_group.aurora[0].id : null
 }

@@ -140,7 +140,7 @@ resource "aws_dynamodb_contributor_insights" "tables" {
 }
 
 resource "aws_rds_cluster" "aurora_serverless" {
-  count = var.enable_aurora ? 1 : 0
+  count = var.enable_aurora && length(var.vpc_subnet_ids) > 0 ? 1 : 0
 
   cluster_identifier = "${var.project}-${var.environment}-aurora"
   engine             = "aurora-mysql"
@@ -183,7 +183,7 @@ resource "aws_rds_cluster" "aurora_serverless" {
 }
 
 resource "aws_rds_cluster_instance" "aurora_serverless" {
-  count = var.enable_aurora ? 1 : 0
+  count = var.enable_aurora && length(var.vpc_subnet_ids) > 0 ? 1 : 0
 
   identifier         = "${var.project}-${var.environment}-aurora-instance-1"
   cluster_identifier = aws_rds_cluster.aurora_serverless[0].id
@@ -204,14 +204,14 @@ resource "aws_rds_cluster_instance" "aurora_serverless" {
 }
 
 resource "random_password" "aurora_password" {
-  count = var.enable_aurora ? 1 : 0
+  count = var.enable_aurora && length(var.vpc_subnet_ids) > 0 ? 1 : 0
 
   length  = 32
   special = true
 }
 
 resource "aws_secretsmanager_secret" "aurora_password" {
-  count = var.enable_aurora ? 1 : 0
+  count = var.enable_aurora && length(var.vpc_subnet_ids) > 0 ? 1 : 0
 
   name                    = "${var.project}-${var.environment}-aurora-password"
   description             = "Aurora Serverless master password"
@@ -221,7 +221,7 @@ resource "aws_secretsmanager_secret" "aurora_password" {
 }
 
 resource "aws_secretsmanager_secret_version" "aurora_password" {
-  count = var.enable_aurora ? 1 : 0
+  count = var.enable_aurora && length(var.vpc_subnet_ids) > 0 ? 1 : 0
 
   secret_id = aws_secretsmanager_secret.aurora_password[0].id
   secret_string = jsonencode({
@@ -235,7 +235,7 @@ resource "aws_secretsmanager_secret_version" "aurora_password" {
 }
 
 resource "aws_db_subnet_group" "aurora" {
-  count = var.enable_aurora ? 1 : 0
+  count = var.enable_aurora && length(var.vpc_subnet_ids) > 0 ? 1 : 0
 
   name       = "${var.project}-${var.environment}-aurora-subnet-group"
   subnet_ids = var.vpc_subnet_ids
@@ -249,7 +249,7 @@ resource "aws_db_subnet_group" "aurora" {
 }
 
 resource "aws_security_group" "aurora" {
-  count = var.enable_aurora ? 1 : 0
+  count = var.enable_aurora && length(var.vpc_subnet_ids) > 0 ? 1 : 0
 
   name        = "${var.project}-${var.environment}-aurora-sg"
   description = "Security group for Aurora Serverless"
@@ -278,7 +278,7 @@ resource "aws_security_group" "aurora" {
 }
 
 resource "aws_iam_role" "aurora_monitoring" {
-  count = var.enable_aurora && var.environment == "prod" ? 1 : 0
+  count = var.enable_aurora && length(var.vpc_subnet_ids) > 0 && var.environment == "prod" ? 1 : 0
 
   name = "${var.project}-${var.environment}-aurora-monitoring"
 
@@ -299,18 +299,18 @@ resource "aws_iam_role" "aurora_monitoring" {
 }
 
 resource "aws_iam_role_policy_attachment" "aurora_monitoring" {
-  count = var.enable_aurora && var.environment == "prod" ? 1 : 0
+  count = var.enable_aurora && length(var.vpc_subnet_ids) > 0 && var.environment == "prod" ? 1 : 0
 
   role       = aws_iam_role.aurora_monitoring[0].name
   policy_arn = "arn:aws:iam::aws:policy/service-role/AmazonRDSEnhancedMonitoringRole"
 }
 
 data "aws_subnet" "vpc" {
-  count = var.enable_aurora ? 1 : 0
-  id    = var.vpc_subnet_ids[0]
+  count = var.enable_aurora && length(var.vpc_subnet_ids) > 0 ? 1 : 0
+  id    = length(var.vpc_subnet_ids) > 0 ? var.vpc_subnet_ids[0] : ""
 }
 
 data "aws_vpc" "main" {
-  count = var.enable_aurora ? 1 : 0
+  count = var.enable_aurora && length(var.vpc_subnet_ids) > 0 ? 1 : 0
   id    = data.aws_subnet.vpc[0].vpc_id
 }
