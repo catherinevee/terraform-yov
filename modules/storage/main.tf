@@ -113,11 +113,45 @@ resource "aws_s3_bucket_public_access_block" "buckets" {
   restrict_public_buckets = true
 }
 
-resource "aws_s3_bucket_intelligent_tiering_configuration" "buckets" {
-  for_each = var.environment == "prod" ? local.buckets : {}
+resource "aws_s3_bucket_intelligent_tiering_configuration" "documents" {
+  count = var.environment == "prod" ? 1 : 0
 
-  bucket = aws_s3_bucket.buckets[each.key].id
-  name   = "${each.key}-intelligent-tiering"
+  bucket = aws_s3_bucket.buckets["documents"].id
+  name   = "documents-intelligent-tiering"
+
+  tiering {
+    access_tier = "ARCHIVE_ACCESS"
+    days        = 90
+  }
+
+  tiering {
+    access_tier = "DEEP_ARCHIVE_ACCESS"
+    days        = 180
+  }
+}
+
+resource "aws_s3_bucket_intelligent_tiering_configuration" "uploads" {
+  count = var.environment == "prod" ? 1 : 0
+
+  bucket = aws_s3_bucket.buckets["uploads"].id
+  name   = "uploads-intelligent-tiering"
+
+  tiering {
+    access_tier = "ARCHIVE_ACCESS"
+    days        = 90
+  }
+
+  tiering {
+    access_tier = "DEEP_ARCHIVE_ACCESS"
+    days        = 180
+  }
+}
+
+resource "aws_s3_bucket_intelligent_tiering_configuration" "logs" {
+  count = var.environment == "prod" ? 1 : 0
+
+  bucket = aws_s3_bucket.buckets["logs"].id
+  name   = "logs-intelligent-tiering"
 
   tiering {
     access_tier = "ARCHIVE_ACCESS"
