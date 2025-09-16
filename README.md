@@ -3,6 +3,7 @@
 [![Terraform](https://img.shields.io/badge/terraform-%3E%3D1.5.0-623CE4.svg?logo=terraform)](https://www.terraform.io/)
 [![AWS Provider](https://img.shields.io/badge/AWS-%7E%3E5.31.0-FF9900.svg?logo=amazon-aws)](https://registry.terraform.io/providers/hashicorp/aws/latest)
 [![Workspaces](https://img.shields.io/badge/Workspaces-Enabled-success.svg?logo=terraform)](#workspaces)
+[![OIDC](https://img.shields.io/badge/OIDC-Enabled-success.svg?logo=amazon-aws)](https://docs.github.com/en/actions/deployment/security-hardening-your-deployments/configuring-openid-connect-in-amazon-web-services)
 [![Deploy](https://github.com/catherinevee/terraform-yov/actions/workflows/terraform-deploy.yml/badge.svg)](https://github.com/catherinevee/terraform-yov/actions/workflows/terraform-deploy.yml)
 [![Cost Monitoring](https://github.com/catherinevee/terraform-yov/actions/workflows/cost-monitoring.yml/badge.svg)](https://github.com/catherinevee/terraform-yov/actions/workflows/cost-monitoring.yml)
 
@@ -174,9 +175,9 @@ terraform destroy -var-file="services/api/dev/terraform.tfvars"
 
 - Terraform >= 1.5.0
 - AWS CLI configured
+- AWS IAM OIDC Provider for GitHub Actions
+- IAM Role: `terraform-yov-github-actions`
 - GitHub Actions secrets:
-  - `AWS_ACCESS_KEY_ID`
-  - `AWS_SECRET_ACCESS_KEY`
   - `TF_API_TOKEN` (optional)
   - `INFRACOST_API_KEY` (optional)
 
