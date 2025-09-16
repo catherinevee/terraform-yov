@@ -16,6 +16,8 @@ jobs:
     permissions:
       contents: read
       pull-requests: write
+    env:
+      INFRACOST_API_KEY: ${{ secrets.INFRACOST_API_KEY }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
