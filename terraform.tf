@@ -41,8 +41,8 @@ locals {
       api_throttle_rate     = 1000
       api_throttle_burst    = 2000
       dynamodb_billing_mode = "PAY_PER_REQUEST"
-      enable_xray          = false
-      log_retention_days   = 7
+      enable_xray           = false
+      log_retention_days    = 7
     }
     staging = {
       lambda_memory         = 1024
@@ -50,8 +50,8 @@ locals {
       api_throttle_rate     = 5000
       api_throttle_burst    = 10000
       dynamodb_billing_mode = "PROVISIONED"
-      enable_xray          = true
-      log_retention_days   = 30
+      enable_xray           = true
+      log_retention_days    = 30
     }
     prod = {
       lambda_memory         = 2048
@@ -59,8 +59,8 @@ locals {
       api_throttle_rate     = 10000
       api_throttle_burst    = 20000
       dynamodb_billing_mode = "PROVISIONED"
-      enable_xray          = true
-      log_retention_days   = 90
+      enable_xray           = true
+      log_retention_days    = 90
     }
   }
 

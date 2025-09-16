@@ -200,10 +200,10 @@ resource "aws_api_gateway_resource" "lambda_resources" {
 resource "aws_api_gateway_method" "lambda_methods" {
   for_each = var.lambda_functions
 
-  rest_api_id   = var.api_gateway_id
-  resource_id   = aws_api_gateway_resource.lambda_resources[each.key].id
-  http_method   = "ANY"
-  authorization = "NONE"
+  rest_api_id      = var.api_gateway_id
+  resource_id      = aws_api_gateway_resource.lambda_resources[each.key].id
+  http_method      = "ANY"
+  authorization    = "NONE"
   api_key_required = true
 }
 
@@ -228,7 +228,7 @@ resource "aws_sfn_state_machine" "orchestrator" {
     StartAt = "ValidateInput"
     States = {
       ValidateInput = {
-        Type = "Task"
+        Type     = "Task"
         Resource = "arn:aws:states:::lambda:invoke"
         Parameters = {
           FunctionName = aws_lambda_function.functions["validate"].arn
@@ -239,7 +239,7 @@ resource "aws_sfn_state_machine" "orchestrator" {
         Next = "ProcessRequest"
         Catch = [{
           ErrorEquals = ["States.ALL"]
-          Next = "HandleError"
+          Next        = "HandleError"
         }]
       }
       ProcessRequest = {
@@ -249,7 +249,7 @@ resource "aws_sfn_state_machine" "orchestrator" {
             StartAt = "ProcessData"
             States = {
               ProcessData = {
-                Type = "Task"
+                Type     = "Task"
                 Resource = "arn:aws:states:::lambda:invoke"
                 Parameters = {
                   FunctionName = aws_lambda_function.functions["process"].arn
@@ -265,14 +265,14 @@ resource "aws_sfn_state_machine" "orchestrator" {
             StartAt = "StoreData"
             States = {
               StoreData = {
-                Type = "Task"
+                Type     = "Task"
                 Resource = "arn:aws:states:::dynamodb:putItem"
                 Parameters = {
                   TableName = "${var.project}-${var.environment}-data"
                   Item = {
-                    "id" = {"S.$" = "$.id"}
-                    "data" = {"S.$" = "$.data"}
-                    "timestamp" = {"N.$" = "$.timestamp"}
+                    "id"        = { "S.$" = "$.id" }
+                    "data"      = { "S.$" = "$.data" }
+                    "timestamp" = { "N.$" = "$.timestamp" }
                   }
                 }
                 End = true
@@ -286,7 +286,7 @@ resource "aws_sfn_state_machine" "orchestrator" {
         Type = "Succeed"
       }
       HandleError = {
-        Type = "Fail"
+        Type  = "Fail"
         Error = "ProcessingFailed"
         Cause = "An error occurred during processing"
       }

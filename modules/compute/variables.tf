@@ -34,7 +34,7 @@ variable "lambda_timeout" {
 variable "lambda_functions" {
   description = "Map of Lambda function configurations"
   type = map(object({
-    handler               = string
+    handler              = string
     description          = string
     memory_size          = optional(number)
     timeout              = optional(number)

@@ -17,18 +17,18 @@ module "networking" {
 module "compute" {
   source = "./modules/compute"
 
-  project                       = local.project
-  environment                   = local.environment
-  common_tags                   = local.common_tags
-  lambda_runtime                = var.lambda_runtime
-  lambda_memory                 = local.current_config.lambda_memory
-  lambda_timeout                = local.current_config.lambda_timeout
-  api_gateway_execution_arn     = module.networking.api_gateway_execution_arn
-  api_gateway_id                = module.networking.api_gateway_id
-  api_gateway_root_resource_id  = module.networking.api_gateway_root_resource_id
-  enable_xray                   = local.current_config.enable_xray
-  enable_vpc                    = var.enable_vpc
-  log_retention_days            = local.current_config.log_retention_days
+  project                      = local.project
+  environment                  = local.environment
+  common_tags                  = local.common_tags
+  lambda_runtime               = var.lambda_runtime
+  lambda_memory                = local.current_config.lambda_memory
+  lambda_timeout               = local.current_config.lambda_timeout
+  api_gateway_execution_arn    = module.networking.api_gateway_execution_arn
+  api_gateway_id               = module.networking.api_gateway_id
+  api_gateway_root_resource_id = module.networking.api_gateway_root_resource_id
+  enable_xray                  = local.current_config.enable_xray
+  enable_vpc                   = var.enable_vpc
+  log_retention_days           = local.current_config.log_retention_days
 
   lambda_functions = {
     validate = {
@@ -54,8 +54,8 @@ module "compute" {
       }
     }
     aggregate = {
-      handler     = "index.handler"
-      description = "Data aggregation function"
+      handler              = "index.handler"
+      description          = "Data aggregation function"
       reserved_concurrency = 10
       environment_vars = {
         AURORA_ENDPOINT = module.database.aurora_cluster_endpoint
@@ -68,13 +68,13 @@ module "compute" {
 module "database" {
   source = "./modules/database"
 
-  project              = local.project
-  environment          = local.environment
-  common_tags          = local.common_tags
-  enable_multi_region  = var.enable_multi_region && local.environment == "prod"
-  replica_regions      = var.enable_multi_region ? [var.secondary_region] : []
-  enable_aurora        = local.environment != "dev"
-  enable_autoscaling   = local.environment != "dev"
+  project             = local.project
+  environment         = local.environment
+  common_tags         = local.common_tags
+  enable_multi_region = var.enable_multi_region && local.environment == "prod"
+  replica_regions     = var.enable_multi_region ? [var.secondary_region] : []
+  enable_aurora       = local.environment != "dev"
+  enable_autoscaling  = local.environment != "dev"
 
   dynamodb_tables = {
     tenants = {
@@ -107,7 +107,7 @@ module "database" {
         }
       ]
       enable_point_in_time_recovery = true
-      enable_ttl = false
+      enable_ttl                    = false
     }
     api_data = {
       billing_mode   = local.current_config.dynamodb_billing_mode
@@ -131,13 +131,13 @@ module "database" {
           write_capacity  = 100
         }
       ]
-      enable_ttl = true
+      enable_ttl    = true
       ttl_attribute = "expiry"
     }
     analytics = {
-      billing_mode   = "PAY_PER_REQUEST"
-      hash_key       = "metric_id"
-      range_key      = "window"
+      billing_mode = "PAY_PER_REQUEST"
+      hash_key     = "metric_id"
+      range_key    = "window"
       attributes = [
         { name = "metric_id", type = "S" },
         { name = "window", type = "S" },
@@ -169,24 +169,24 @@ module "storage" {
 module "security" {
   source = "./modules/security"
 
-  project              = local.project
-  environment          = local.environment
-  common_tags          = local.common_tags
+  project               = local.project
+  environment           = local.environment
+  common_tags           = local.common_tags
   tenant_isolation_mode = var.tenant_isolation_mode
-  alert_email          = var.alert_email
+  alert_email           = var.alert_email
 }
 
 module "monitoring" {
   source = "./modules/monitoring"
 
-  project                  = local.project
-  environment              = local.environment
-  common_tags              = local.common_tags
-  enable_xray              = local.current_config.enable_xray
-  log_retention_days       = local.current_config.log_retention_days
-  alert_email              = var.alert_email
-  lambda_function_names    = module.compute.lambda_function_names
-  api_gateway_name         = module.networking.api_gateway_id
-  dynamodb_table_names     = module.database.dynamodb_table_names
+  project                    = local.project
+  environment                = local.environment
+  common_tags                = local.common_tags
+  enable_xray                = local.current_config.enable_xray
+  log_retention_days         = local.current_config.log_retention_days
+  alert_email                = var.alert_email
+  lambda_function_names      = module.compute.lambda_function_names
+  api_gateway_name           = module.networking.api_gateway_id
+  dynamodb_table_names       = module.database.dynamodb_table_names
   cloudfront_distribution_id = module.networking.cloudfront_distribution_id
 }

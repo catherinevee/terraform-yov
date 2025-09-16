@@ -291,13 +291,11 @@ jobs:
           API_URL=$(terraform output -raw cloudfront_domain)
           curl -f https://$API_URL/health || exit 1
 
-      - name: Deployment Notification
+      - name: Deployment Summary
         if: success()
-        uses: 8398a7/action-slack@v3
-        with:
-          status: success
-          text: 'Production deployment successful! 🚀'
-          webhook_url: ${{ secrets.SLACK_WEBHOOK }}
+        run: |
+          echo "### Production deployment successful! 🚀" >> $GITHUB_STEP_SUMMARY
+          echo "- CloudFront URL: https://$(terraform output -raw cloudfront_domain)" >> $GITHUB_STEP_SUMMARY
 
   rollback:
     name: Rollback Production
@@ -312,9 +310,7 @@ jobs:
           echo "Rolling back Lambda function aliases to previous version"
           # AWS CLI commands to rollback Lambda aliases
 
-      - name: Rollback Notification
-        uses: 8398a7/action-slack@v3
-        with:
-          status: failure
-          text: 'Production deployment rolled back! ⚠️'
-          webhook_url: ${{ secrets.SLACK_WEBHOOK }}
+      - name: Rollback Summary
+        run: |
+          echo "### Production deployment rolled back! ⚠️" >> $GITHUB_STEP_SUMMARY
+          echo "Check logs for details" >> $GITHUB_STEP_SUMMARY

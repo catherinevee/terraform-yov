@@ -31,14 +31,14 @@ locals {
       purpose = "api-documents"
       lifecycle_rules = [
         {
-          id      = "archive-old-files"
-          status  = "Enabled"
+          id              = "archive-old-files"
+          status          = "Enabled"
           transition_days = 30
           storage_class   = "STANDARD_IA"
         },
         {
-          id      = "delete-old-files"
-          status  = var.environment == "prod" ? "Disabled" : "Enabled"
+          id              = "delete-old-files"
+          status          = var.environment == "prod" ? "Disabled" : "Enabled"
           expiration_days = 90
         }
       ]
@@ -57,8 +57,8 @@ locals {
       purpose = "application-logs"
       lifecycle_rules = [
         {
-          id      = "delete-old-logs"
-          status  = "Enabled"
+          id              = "delete-old-logs"
+          status          = "Enabled"
           expiration_days = var.environment == "prod" ? 90 : 7
         }
       ]

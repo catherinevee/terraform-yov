@@ -2,8 +2,8 @@ output "dynamodb_tables" {
   description = "Map of DynamoDB table names and ARNs"
   value = {
     for k, v in aws_dynamodb_table.tables : k => {
-      name = v.name
-      arn  = v.arn
+      name       = v.name
+      arn        = v.arn
       stream_arn = v.stream_arn
     }
   }
@@ -11,7 +11,7 @@ output "dynamodb_tables" {
 
 output "dynamodb_table_names" {
   description = "List of DynamoDB table names"
-  value = [for t in aws_dynamodb_table.tables : t.name]
+  value       = [for t in aws_dynamodb_table.tables : t.name]
 }
 
 output "dynamodb_table_arns" {

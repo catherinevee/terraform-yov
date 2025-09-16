@@ -163,11 +163,11 @@ resource "aws_rds_cluster" "aurora_serverless" {
   vpc_security_group_ids = [aws_security_group.aurora[0].id]
 
   storage_encrypted = true
-  kms_key_id       = var.kms_key_arn != "" ? var.kms_key_arn : null
+  kms_key_id        = var.kms_key_arn != "" ? var.kms_key_arn : null
 
   enabled_cloudwatch_logs_exports = ["audit", "error", "general", "slowquery"]
 
-  skip_final_snapshot = var.environment != "prod"
+  skip_final_snapshot       = var.environment != "prod"
   final_snapshot_identifier = var.environment == "prod" ? "${var.project}-${var.environment}-aurora-final-${formatdate("YYYYMMDDHHmmss", timestamp())}" : null
 
   apply_immediately = var.environment != "prod"
@@ -192,8 +192,8 @@ resource "aws_rds_cluster_instance" "aurora_serverless" {
   engine_version     = aws_rds_cluster.aurora_serverless[0].engine_version
 
   performance_insights_enabled = var.environment == "prod"
-  monitoring_interval         = var.environment == "prod" ? 60 : 0
-  monitoring_role_arn        = var.environment == "prod" ? aws_iam_role.aurora_monitoring[0].arn : null
+  monitoring_interval          = var.environment == "prod" ? 60 : 0
+  monitoring_role_arn          = var.environment == "prod" ? aws_iam_role.aurora_monitoring[0].arn : null
 
   tags = merge(
     var.common_tags,

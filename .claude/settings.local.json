@@ -6,7 +6,13 @@
       "Bash(terraform:*)",
       "Bash(python:*)",
       "Bash(pip install:*)",
-      "Bash(git add:*)"
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(gh repo view:*)",
+      "Bash(git push:*)",
+      "Bash(gh run list:*)",
+      "Bash(gh run view:*)",
+      "Bash(gh workflow:*)"
     ],
     "deny": [],
     "ask": []

@@ -33,11 +33,11 @@ variable "dynamodb_tables" {
       read_capacity   = optional(number)
       write_capacity  = optional(number)
     })))
-    enable_streams = optional(bool)
-    stream_view_type = optional(string)
+    enable_streams                = optional(bool)
+    stream_view_type              = optional(string)
     enable_point_in_time_recovery = optional(bool)
-    enable_ttl = optional(bool)
-    ttl_attribute = optional(string)
+    enable_ttl                    = optional(bool)
+    ttl_attribute                 = optional(string)
   }))
   default = {}
 }
@@ -63,26 +63,26 @@ variable "enable_aurora" {
 variable "aurora_config" {
   description = "Aurora Serverless v2 configuration"
   type = object({
-    engine_version       = string
-    database_name        = string
-    master_username      = string
-    min_capacity         = number
-    max_capacity         = number
-    backup_retention_period = number
-    preferred_backup_window = string
+    engine_version               = string
+    database_name                = string
+    master_username              = string
+    min_capacity                 = number
+    max_capacity                 = number
+    backup_retention_period      = number
+    preferred_backup_window      = string
     preferred_maintenance_window = string
-    enable_http_endpoint = bool
+    enable_http_endpoint         = bool
   })
   default = {
-    engine_version       = "8.0.mysql_aurora.3.04.0"
-    database_name        = "reporting"
-    master_username      = "admin"
-    min_capacity         = 0.5
-    max_capacity         = 16
-    backup_retention_period = 7
-    preferred_backup_window = "03:00-04:00"
+    engine_version               = "8.0.mysql_aurora.3.04.0"
+    database_name                = "reporting"
+    master_username              = "admin"
+    min_capacity                 = 0.5
+    max_capacity                 = 16
+    backup_retention_period      = 7
+    preferred_backup_window      = "03:00-04:00"
     preferred_maintenance_window = "sun:04:00-sun:05:00"
-    enable_http_endpoint = true
+    enable_http_endpoint         = true
   }
 }
 
@@ -107,19 +107,19 @@ variable "enable_autoscaling" {
 variable "autoscaling_config" {
   description = "DynamoDB auto-scaling configuration"
   type = object({
-    target_tracking_read = number
+    target_tracking_read  = number
     target_tracking_write = number
-    min_read_capacity = number
-    max_read_capacity = number
-    min_write_capacity = number
-    max_write_capacity = number
+    min_read_capacity     = number
+    max_read_capacity     = number
+    min_write_capacity    = number
+    max_write_capacity    = number
   })
   default = {
-    target_tracking_read = 70
+    target_tracking_read  = 70
     target_tracking_write = 70
-    min_read_capacity = 5
-    max_read_capacity = 40000
-    min_write_capacity = 5
-    max_write_capacity = 40000
+    min_read_capacity     = 5
+    max_read_capacity     = 40000
+    min_write_capacity    = 5
+    max_write_capacity    = 40000
   }
 }
