@@ -1,0 +1,1609 @@
+module.compute.data.aws_iam_policy_document.lambda_assume_role: Reading...
+module.networking.data.aws_region.current: Reading...
+module.monitoring.data.aws_region.current: Reading...
+module.networking.data.aws_region.current: Read complete after 0s [id=ap-southeast-1]
+module.compute.data.aws_iam_policy_document.lambda_assume_role: Read complete after 0s [id=2690255455]
+module.monitoring.data.aws_region.current: Read complete after 0s [id=ap-southeast-1]
+
+Terraform used the selected providers to generate the following execution
+plan. Resource actions are indicated with the following symbols:
+  + create
+
+Terraform planned the following actions, but then encountered a problem:
+
+  # module.compute.aws_cloudwatch_log_group.step_functions will be created
+  + resource "aws_cloudwatch_log_group" "step_functions" {
+      + arn               = (known after apply)
+      + id                = (known after apply)
+      + log_group_class   = (known after apply)
+      + name              = "/aws/vendedlogs/states/serverless-api-dev-orchestrator"
+      + name_prefix       = (known after apply)
+      + retention_in_days = 7
+      + skip_destroy      = false
+      + tags              = {
+          + "Compliance"  = "pci-dss"
+          + "CostCenter"  = "engineering"
+          + "Environment" = "dev"
+          + "ManagedBy"   = "terraform"
+          + "Owner"       = "platform-team"
+          + "Project"     = "serverless-api"
+          + "Version"     = "1.0.0"
+        }
+      + tags_all          = {
+          + "Compliance"  = "pci-dss"
+          + "CostCenter"  = "engineering"
+          + "Environment" = "dev"
+          + "ManagedBy"   = "terraform"
+          + "Owner"       = "platform-team"
+          + "Project"     = "serverless-api"
+          + "Version"     = "1.0.0"
+        }
+        # (1 unchanged attribute hidden)
+    }
+
+  # module.compute.aws_iam_role.step_functions will be created
+  + resource "aws_iam_role" "step_functions" {
+      + arn                   = (known after apply)
+      + assume_role_policy    = jsonencode(
+            {
+              + Statement = [
+                  + {
+                      + Action    = "sts:AssumeRole"
+                      + Effect    = "Allow"
+                      + Principal = {
+                          + Service = "states.amazonaws.com"
+                        }
+                    },
+                ]
+              + Version   = "2012-10-17"
+            }
+        )
+      + create_date           = (known after apply)
+      + force_detach_policies = false
+      + id                    = (known after apply)
+      + managed_policy_arns   = (known after apply)
+      + max_session_duration  = 3600
+      + name                  = "serverless-api-dev-stepfunctions-role"
+      + name_prefix           = (known after apply)
+      + path                  = "/"
+      + tags                  = {
+          + "Compliance"  = "pci-dss"
+          + "CostCenter"  = "engineering"
+          + "Environment" = "dev"
+          + "ManagedBy"   = "terraform"
+          + "Owner"       = "platform-team"
+          + "Project"     = "serverless-api"
+          + "Version"     = "1.0.0"
+        }
+      + tags_all              = {
+          + "Compliance"  = "pci-dss"
+          + "CostCenter"  = "engineering"
+          + "Environment" = "dev"
+          + "ManagedBy"   = "terraform"
+          + "Owner"       = "platform-team"
+          + "Project"     = "serverless-api"
+          + "Version"     = "1.0.0"
+        }
+      + unique_id             = (known after apply)
+
+      + inline_policy (known after apply)
+    }
+
+  # module.compute.aws_lambda_layer_version.shared will be created
+  + resource "aws_lambda_layer_version" "shared" {
+      + arn                         = (known after apply)
+      + compatible_runtimes         = [
+          + "nodejs18.x",
+        ]
+      + created_date                = (known after apply)
+      + description                 = "Shared dependencies for Lambda functions"
+      + filename                    = "modules/compute/lambda-layer.zip"
+      + id                          = (known after apply)
+      + layer_arn                   = (known after apply)
+      + layer_name                  = "serverless-api-dev-shared"
+      + signing_job_arn             = (known after apply)
+      + signing_profile_version_arn = (known after apply)
+      + skip_destroy                = false
+      + source_code_hash            = (known after apply)
+      + source_code_size            = (known after apply)
+      + version                     = (known after apply)
+    }
+
+  # module.database.aws_dynamodb_table.tables["analytics"] will be created
+  + resource "aws_dynamodb_table" "tables" {
+      + arn              = (known after apply)
+      + billing_mode     = "PAY_PER_REQUEST"
+      + hash_key         = "metric_id"
+      + id               = (known after apply)
+      + name             = "serverless-api-dev-analytics"
+      + range_key        = "window"
+      + read_capacity    = (known after apply)
+      + stream_arn       = (known after apply)
+      + stream_enabled   = true
+      + stream_label     = (known after apply)
+      + stream_view_type = "NEW_AND_OLD_IMAGES"
+      + tags             = {
+          + "Compliance"  = "pci-dss"
+          + "CostCenter"  = "engineering"
+          + "Environment" = "dev"
+          + "ManagedBy"   = "terraform"
+          + "Name"        = "serverless-api-dev-analytics"
+          + "Owner"       = "platform-team"
+          + "Project"     = "serverless-api"
+          + "Version"     = "1.0.0"
+        }
+      + tags_all         = {
+          + "Compliance"  = "pci-dss"
+          + "CostCenter"  = "engineering"
+          + "Environment" = "dev"
+          + "ManagedBy"   = "terraform"
+          + "Name"        = "serverless-api-dev-analytics"
+          + "Owner"       = "platform-team"
+          + "Project"     = "serverless-api"
+          + "Version"     = "1.0.0"
+        }
+      + write_capacity   = (known after apply)
+
+      + attribute {
+          + name = "metric_id"
+          + type = "S"
+        }
+      + attribute {
+          + name = "tenant_id"
+          + type = "S"
+        }
+      + attribute {
+          + name = "window"
+          + type = "S"
+        }
+
+      + global_secondary_index {
+          + hash_key           = "tenant_id"
+          + name               = "tenant-metrics-index"
+          + non_key_attributes = []
+          + projection_type    = "ALL"
+          + range_key          = "window"
+        }
+
+      + point_in_time_recovery {
+          + enabled = true
+        }
+
+      + server_side_encryption {
+          + enabled     = true
+          + kms_key_arn = (known after apply)
+        }
+
+      + ttl {
+          + attribute_name = "ttl"
+          + enabled        = false
+        }
+    }
+
+  # module.database.aws_dynamodb_table.tables["tenants"] will be created
+  + resource "aws_dynamodb_table" "tables" {
+      + arn              = (known after apply)
+      + billing_mode     = "PAY_PER_REQUEST"
+      + hash_key         = "tenant_id"
+      + id               = (known after apply)
+      + name             = "serverless-api-dev-tenants"
+      + range_key        = "created_at"
+      + read_capacity    = (known after apply)
+      + stream_arn       = (known after apply)
+      + stream_enabled   = true
+      + stream_label     = (known after apply)
+      + stream_view_type = "NEW_AND_OLD_IMAGES"
+      + tags             = {
+          + "Compliance"  = "pci-dss"
+          + "CostCenter"  = "engineering"
+          + "Environment" = "dev"
+          + "ManagedBy"   = "terraform"
+          + "Name"        = "serverless-api-dev-tenants"
+          + "Owner"       = "platform-team"
+          + "Project"     = "serverless-api"
+          + "Version"     = "1.0.0"
+        }
+      + tags_all         = {
+          + "Compliance"  = "pci-dss"
+          + "CostCenter"  = "engineering"
+          + "Environment" = "dev"
+          + "ManagedBy"   = "terraform"
+          + "Name"        = "serverless-api-dev-tenants"
+          + "Owner"       = "platform-team"
+          + "Project"     = "serverless-api"
+          + "Version"     = "1.0.0"
+        }
+      + write_capacity   = (known after apply)
+
+      + attribute {
+          + name = "created_at"
+          + type = "N"
+        }
+      + attribute {
+          + name = "plan_type"
+          + type = "S"
+        }
+      + attribute {
+          + name = "status"
+          + type = "S"
+        }
+      + attribute {
+          + name = "tenant_id"
+          + type = "S"
+        }
+
+      + global_secondary_index {
+          + hash_key           = "plan_type"
+          + name               = "plan-index"
+          + non_key_attributes = []
+          + projection_type    = "KEYS_ONLY"
+            # (1 unchanged attribute hidden)
+        }
+      + global_secondary_index {
+          + hash_key           = "status"
+          + name               = "status-index"
+          + non_key_attributes = []
+          + projection_type    = "ALL"
+          + range_key          = "created_at"
+        }
+
+      + point_in_time_recovery {
+          + enabled = true
+        }
+
+      + server_side_encryption {
+          + enabled     = true
+          + kms_key_arn = (known after apply)
+        }
+
+      + ttl {
+          + attribute_name = "ttl"
+          + enabled        = false
+        }
+    }
+
+  # module.monitoring.aws_cloudwatch_dashboard.main will be created
+  + resource "aws_cloudwatch_dashboard" "main" {
+      + dashboard_arn  = (known after apply)
+      + dashboard_body = jsonencode(
+            {
+              + widgets = [
+                  + {
+                      + properties = {
+                          + metrics = [
+                              + [
+                                  + "AWS/Lambda",
+                                  + "Invocations",
+                                  + {
+                                      + stat = "Sum"
+                                    },
+                                ],
+                              + [
+                                  + ".",
+                                  + "Errors",
+                                  + {
+                                      + stat = "Sum"
+                                    },
+                                ],
+                              + [
+                                  + ".",
+                                  + "Duration",
+                                  + {
+                                      + stat = "Average"
+                                    },
+                                ],
+                              + [
+                                  + ".",
+                                  + "Throttles",
+                                  + {
+                                      + stat = "Sum"
+                                    },
+                                ],
+                            ]
+                          + period  = 300
+                          + region  = "ap-southeast-1"
+                          + stat    = "Average"
+                          + title   = "Lambda Metrics"
+                        }
+                      + type       = "metric"
+                    },
+                  + {
+                      + properties = {
+                          + metrics = [
+                              + [
+                                  + "AWS/ApiGateway",
+                                  + "4XXError",
+                                  + {
+                                      + stat = "Sum"
+                                    },
+                                ],
+                              + [
+                                  + ".",
+                                  + "5XXError",
+                                  + {
+                                      + stat = "Sum"
+                                    },
+                                ],
+                              + [
+                                  + ".",
+                                  + "Count",
+                                  + {
+                                      + stat = "Sum"
+                                    },
+                                ],
+                              + [
+                                  + ".",
+                                  + "Latency",
+                                  + {
+                                      + stat = "Average"
+                                    },
+                                ],
+                            ]
+                          + period  = 300
+                          + region  = "ap-southeast-1"
+                          + stat    = "Sum"
+                          + title   = "API Gateway Metrics"
+                        }
+                      + type       = "metric"
+                    },
+                  + {
+                      + properties = {
+                          + metrics = [
+                              + [
+                                  + "AWS/DynamoDB",
+                                  + "ConsumedReadCapacityUnits",
+                                  + {
+                                      + stat = "Sum"
+                                    },
+                                ],
+                              + [
+                                  + ".",
+                                  + "ConsumedWriteCapacityUnits",
+                                  + {
+                                      + stat = "Sum"
+                                    },
+                                ],
+                              + [
+                                  + ".",
+                                  + "UserErrors",
+                                  + {
+                                      + stat = "Sum"
+                                    },
+                                ],
+                              + [
+                                  + ".",
+                                  + "SystemErrors",
+                                  + {
+                                      + stat = "Sum"
+                                    },
+                                ],
+                            ]
+                          + period  = 300
+                          + region  = "ap-southeast-1"
+                          + stat    = "Sum"
+                          + title   = "DynamoDB Metrics"
+                        }
+                      + type       = "metric"
+                    },
+                ]
+            }
+        )
+      + dashboard_name = "serverless-api-dev"
+      + id             = (known after apply)
+    }
+
+  # module.monitoring.aws_cloudwatch_metric_alarm.api_4xx will be created
+  + resource "aws_cloudwatch_metric_alarm" "api_4xx" {
+      + actions_enabled                       = true
+      + alarm_actions                         = (known after apply)
+      + alarm_description                     = "API Gateway 4xx errors too high"
+      + alarm_name                            = "serverless-api-dev-api-4xx"
+      + arn                                   = (known after apply)
+      + comparison_operator                   = "GreaterThanThreshold"
+      + dimensions                            = (known after apply)
+      + evaluate_low_sample_count_percentiles = (known after apply)
+      + evaluation_periods                    = 2
+      + id                                    = (known after apply)
+      + metric_name                           = "4XXError"
+      + namespace                             = "AWS/ApiGateway"
+      + period                                = 60
+      + statistic                             = "Sum"
+      + tags                                  = {
+          + "Compliance"  = "pci-dss"
+          + "CostCenter"  = "engineering"
+          + "Environment" = "dev"
+          + "ManagedBy"   = "terraform"
+          + "Owner"       = "platform-team"
+          + "Project"     = "serverless-api"
+          + "Version"     = "1.0.0"
+        }
+      + tags_all                              = {
+          + "Compliance"  = "pci-dss"
+          + "CostCenter"  = "engineering"
+          + "Environment" = "dev"
+          + "ManagedBy"   = "terraform"
+          + "Owner"       = "platform-team"
+          + "Project"     = "serverless-api"
+          + "Version"     = "1.0.0"
+        }
+      + threshold                             = 100
+      + treat_missing_data                    = "missing"
+    }
+
+  # module.monitoring.aws_cloudwatch_metric_alarm.api_5xx will be created
+  + resource "aws_cloudwatch_metric_alarm" "api_5xx" {
+      + actions_enabled                       = true
+      + alarm_actions                         = (known after apply)
+      + alarm_description                     = "API Gateway 5xx errors detected"
+      + alarm_name                            = "serverless-api-dev-api-5xx"
+      + arn                                   = (known after apply)
+      + comparison_operator                   = "GreaterThanThreshold"
+      + dimensions                            = (known after apply)
+      + evaluate_low_sample_count_percentiles = (known after apply)
+      + evaluation_periods                    = 1
+      + id                                    = (known after apply)
+      + metric_name                           = "5XXError"
+      + namespace                             = "AWS/ApiGateway"
+      + period                                = 60
+      + statistic                             = "Sum"
+      + tags                                  = {
+          + "Compliance"  = "pci-dss"
+          + "CostCenter"  = "engineering"
+          + "Environment" = "dev"
+          + "ManagedBy"   = "terraform"
+          + "Owner"       = "platform-team"
+          + "Project"     = "serverless-api"
+          + "Version"     = "1.0.0"
+        }
+      + tags_all                              = {
+          + "Compliance"  = "pci-dss"
+          + "CostCenter"  = "engineering"
+          + "Environment" = "dev"
+          + "ManagedBy"   = "terraform"
+          + "Owner"       = "platform-team"
+          + "Project"     = "serverless-api"
+          + "Version"     = "1.0.0"
+        }
+      + threshold                             = 10
+      + treat_missing_data                    = "missing"
+    }
+
+  # module.monitoring.aws_sns_topic.alerts will be created
+  + resource "aws_sns_topic" "alerts" {
+      + arn                         = (known after apply)
+      + beginning_archive_time      = (known after apply)
+      + content_based_deduplication = false
+      + fifo_topic                  = false
+      + id                          = (known after apply)
+      + kms_master_key_id           = "alias/aws/sns"
+      + name                        = "serverless-api-dev-alerts"
+      + name_prefix                 = (known after apply)
+      + owner                       = (known after apply)
+      + policy                      = (known after apply)
+      + signature_version           = (known after apply)
+      + tags                        = {
+          + "Compliance"  = "pci-dss"
+          + "CostCenter"  = "engineering"
+          + "Environment" = "dev"
+          + "ManagedBy"   = "terraform"
+          + "Owner"       = "platform-team"
+          + "Project"     = "serverless-api"
+          + "Version"     = "1.0.0"
+        }
+      + tags_all                    = {
+          + "Compliance"  = "pci-dss"
+          + "CostCenter"  = "engineering"
+          + "Environment" = "dev"
+          + "ManagedBy"   = "terraform"
+          + "Owner"       = "platform-team"
+          + "Project"     = "serverless-api"
+          + "Version"     = "1.0.0"
+        }
+      + tracing_config              = (known after apply)
+    }
+
+  # module.networking.aws_api_gateway_api_key.keys["basic"] will be created
+  + resource "aws_api_gateway_api_key" "keys" {
+      + arn               = (known after apply)
+      + created_date      = (known after apply)
+      + description       = "API key for basic usage plan"
+      + enabled           = true
+      + id                = (known after apply)
+      + last_updated_date = (known after apply)
+      + name              = "serverless-api-dev-basic-key"
+      + tags              = {
+          + "Compliance"  = "pci-dss"
+          + "CostCenter"  = "engineering"
+          + "Environment" = "dev"
+          + "ManagedBy"   = "terraform"
+          + "Owner"       = "platform-team"
+          + "Project"     = "serverless-api"
+          + "Version"     = "1.0.0"
+        }
+      + tags_all          = {
+          + "Compliance"  = "pci-dss"
+          + "CostCenter"  = "engineering"
+          + "Environment" = "dev"
+          + "ManagedBy"   = "terraform"
+          + "Owner"       = "platform-team"
+          + "Project"     = "serverless-api"
+          + "Version"     = "1.0.0"
+        }
+      + value             = (sensitive value)
+    }
+
+  # module.networking.aws_api_gateway_api_key.keys["free"] will be created
+  + resource "aws_api_gateway_api_key" "keys" {
+      + arn               = (known after apply)
+      + created_date      = (known after apply)
+      + description       = "API key for free usage plan"
+      + enabled           = true
+      + id                = (known after apply)
+      + last_updated_date = (known after apply)
+      + name              = "serverless-api-dev-free-key"
+      + tags              = {
+          + "Compliance"  = "pci-dss"
+          + "CostCenter"  = "engineering"
+          + "Environment" = "dev"
+          + "ManagedBy"   = "terraform"
+          + "Owner"       = "platform-team"
+          + "Project"     = "serverless-api"
+          + "Version"     = "1.0.0"
+        }
+      + tags_all          = {
+          + "Compliance"  = "pci-dss"
+          + "CostCenter"  = "engineering"
+          + "Environment" = "dev"
+          + "ManagedBy"   = "terraform"
+          + "Owner"       = "platform-team"
+          + "Project"     = "serverless-api"
+          + "Version"     = "1.0.0"
+        }
+      + value             = (sensitive value)
+    }
+
+  # module.networking.aws_api_gateway_deployment.main will be created
+  + resource "aws_api_gateway_deployment" "main" {
+      + created_date  = (known after apply)
+      + execution_arn = (known after apply)
+      + id            = (known after apply)
+      + invoke_url    = (known after apply)
+      + rest_api_id   = (known after apply)
+      + triggers      = (known after apply)
+    }
+
+  # module.networking.aws_api_gateway_gateway_response.cors will be created
+  + resource "aws_api_gateway_gateway_response" "cors" {
+      + id                  = (known after apply)
+      + response_parameters = {
+          + "gatewayresponse.header.Access-Control-Allow-Headers" = "'*'"
+          + "gatewayresponse.header.Access-Control-Allow-Methods" = "'*'"
+          + "gatewayresponse.header.Access-Control-Allow-Origin"  = "'*'"
+        }
+      + response_templates  = {
+          + "application/json" = "{\"message\":$context.error.messageString}"
+        }
+      + response_type       = "DEFAULT_4XX"
+      + rest_api_id         = (known after apply)
+      + status_code         = "4XX"
+    }
+
+  # module.networking.aws_api_gateway_method_settings.main will be created
+  + resource "aws_api_gateway_method_settings" "main" {
+      + id          = (known after apply)
+      + method_path = "*/*"
+      + rest_api_id = (known after apply)
+      + stage_name  = "dev"
+
+      + settings {
+          + cache_data_encrypted                       = (known after apply)
+          + cache_ttl_in_seconds                       = (known after apply)
+          + caching_enabled                            = (known after apply)
+          + data_trace_enabled                         = true
+          + logging_level                              = "INFO"
+          + metrics_enabled                            = true
+          + require_authorization_for_cache_control    = (known after apply)
+          + throttling_burst_limit                     = 2000
+          + throttling_rate_limit                      = 1000
+          + unauthorized_cache_control_header_strategy = (known after apply)
+        }
+    }
+
+  # module.networking.aws_api_gateway_request_validator.main will be created
+  + resource "aws_api_gateway_request_validator" "main" {
+      + id                          = (known after apply)
+      + name                        = "serverless-api-dev-validator"
+      + rest_api_id                 = (known after apply)
+      + validate_request_body       = true
+      + validate_request_parameters = true
+    }
+
+  # module.networking.aws_api_gateway_rest_api.main will be created
+  + resource "aws_api_gateway_rest_api" "main" {
+      + api_key_source               = (known after apply)
+      + arn                          = (known after apply)
+      + binary_media_types           = (known after apply)
+      + created_date                 = (known after apply)
+      + description                  = "REST API for serverless-api dev environment"
+      + disable_execute_api_endpoint = (known after apply)
+      + execution_arn                = (known after apply)
+      + id                           = (known after apply)
+      + minimum_compression_size     = (known after apply)
+      + name                         = "serverless-api-dev"
+      + policy                       = (known after apply)
+      + root_resource_id             = (known after apply)
+      + tags                         = {
+          + "Compliance"  = "pci-dss"
+          + "CostCenter"  = "engineering"
+          + "Environment" = "dev"
+          + "ManagedBy"   = "terraform"
+          + "Owner"       = "platform-team"
+          + "Project"     = "serverless-api"
+          + "Version"     = "1.0.0"
+        }
+      + tags_all                     = {
+          + "Compliance"  = "pci-dss"
+          + "CostCenter"  = "engineering"
+          + "Environment" = "dev"
+          + "ManagedBy"   = "terraform"
+          + "Owner"       = "platform-team"
+          + "Project"     = "serverless-api"
+          + "Version"     = "1.0.0"
+        }
+
+      + endpoint_configuration {
+          + types            = [
+              + "REGIONAL",
+            ]
+          + vpc_endpoint_ids = (known after apply)
+        }
+    }
+
+  # module.networking.aws_api_gateway_stage.main will be created
+  + resource "aws_api_gateway_stage" "main" {
+      + arn                  = (known after apply)
+      + deployment_id        = (known after apply)
+      + execution_arn        = (known after apply)
+      + id                   = (known after apply)
+      + invoke_url           = (known after apply)
+      + rest_api_id          = (known after apply)
+      + stage_name           = "dev"
+      + tags                 = {
+          + "Compliance"  = "pci-dss"
+          + "CostCenter"  = "engineering"
+          + "Environment" = "dev"
+          + "ManagedBy"   = "terraform"
+          + "Owner"       = "platform-team"
+          + "Project"     = "serverless-api"
+          + "Version"     = "1.0.0"
+        }
+      + tags_all             = {
+          + "Compliance"  = "pci-dss"
+          + "CostCenter"  = "engineering"
+          + "Environment" = "dev"
+          + "ManagedBy"   = "terraform"
+          + "Owner"       = "platform-team"
+          + "Project"     = "serverless-api"
+          + "Version"     = "1.0.0"
+        }
+      + web_acl_arn          = (known after apply)
+      + xray_tracing_enabled = false
+
+      + access_log_settings {
+          + destination_arn = (known after apply)
+          + format          = jsonencode(
+                {
+                  + caller         = "$context.identity.caller"
+                  + httpMethod     = "$context.httpMethod"
+                  + ip             = "$context.identity.sourceIp"
+                  + protocol       = "$context.protocol"
+                  + requestId      = "$context.requestId"
+                  + requestTime    = "$context.requestTime"
+                  + resourcePath   = "$context.resourcePath"
+                  + responseLength = "$context.responseLength"
+                  + status         = "$context.status"
+                  + user           = "$context.identity.user"
+                }
+            )
+        }
+    }
+
+  # module.networking.aws_api_gateway_usage_plan.plans["basic"] will be created
+  + resource "aws_api_gateway_usage_plan" "plans" {
+      + arn         = (known after apply)
+      + description = "Usage plan for basic tier"
+      + id          = (known after apply)
+      + name        = "serverless-api-dev-basic"
+      + tags        = {
+          + "Compliance"  = "pci-dss"
+          + "CostCenter"  = "engineering"
+          + "Environment" = "dev"
+          + "ManagedBy"   = "terraform"
+          + "Owner"       = "platform-team"
+          + "Project"     = "serverless-api"
+          + "Version"     = "1.0.0"
+        }
+      + tags_all    = {
+          + "Compliance"  = "pci-dss"
+          + "CostCenter"  = "engineering"
+          + "Environment" = "dev"
+          + "ManagedBy"   = "terraform"
+          + "Owner"       = "platform-team"
+          + "Project"     = "serverless-api"
+          + "Version"     = "1.0.0"
+        }
+
+      + api_stages {
+          + api_id = (known after apply)
+          + stage  = "dev"
+        }
+
+      + quota_settings {
+          + limit  = 1000
+          + offset = 0
+          + period = "DAY"
+        }
+
+      + throttle_settings {
+          + burst_limit = 40
+          + rate_limit  = 20
+        }
+    }
+
+  # module.networking.aws_api_gateway_usage_plan.plans["free"] will be created
+  + resource "aws_api_gateway_usage_plan" "plans" {
+      + arn         = (known after apply)
+      + description = "Usage plan for free tier"
+      + id          = (known after apply)
+      + name        = "serverless-api-dev-free"
+      + tags        = {
+          + "Compliance"  = "pci-dss"
+          + "CostCenter"  = "engineering"
+          + "Environment" = "dev"
+          + "ManagedBy"   = "terraform"
+          + "Owner"       = "platform-team"
+          + "Project"     = "serverless-api"
+          + "Version"     = "1.0.0"
+        }
+      + tags_all    = {
+          + "Compliance"  = "pci-dss"
+          + "CostCenter"  = "engineering"
+          + "Environment" = "dev"
+          + "ManagedBy"   = "terraform"
+          + "Owner"       = "platform-team"
+          + "Project"     = "serverless-api"
+          + "Version"     = "1.0.0"
+        }
+
+      + api_stages {
+          + api_id = (known after apply)
+          + stage  = "dev"
+        }
+
+      + quota_settings {
+          + limit  = 100
+          + offset = 0
+          + period = "DAY"
+        }
+
+      + throttle_settings {
+          + burst_limit = 10
+          + rate_limit  = 5
+        }
+    }
+
+  # module.networking.aws_api_gateway_usage_plan_key.plan_keys["basic"] will be created
+  + resource "aws_api_gateway_usage_plan_key" "plan_keys" {
+      + id            = (known after apply)
+      + key_id        = (known after apply)
+      + key_type      = "API_KEY"
+      + name          = (known after apply)
+      + usage_plan_id = (known after apply)
+      + value         = (known after apply)
+    }
+
+  # module.networking.aws_api_gateway_usage_plan_key.plan_keys["free"] will be created
+  + resource "aws_api_gateway_usage_plan_key" "plan_keys" {
+      + id            = (known after apply)
+      + key_id        = (known after apply)
+      + key_type      = "API_KEY"
+      + name          = (known after apply)
+      + usage_plan_id = (known after apply)
+      + value         = (known after apply)
+    }
+
+  # module.networking.aws_cloudfront_distribution.api_cdn will be created
+  + resource "aws_cloudfront_distribution" "api_cdn" {
+      + arn                             = (known after apply)
+      + caller_reference                = (known after apply)
+      + comment                         = "serverless-api-dev API CDN"
+      + continuous_deployment_policy_id = (known after apply)
+      + domain_name                     = (known after apply)
+      + enabled                         = true
+      + etag                            = (known after apply)
+      + hosted_zone_id                  = (known after apply)
+      + http_version                    = "http2"
+      + id                              = (known after apply)
+      + in_progress_validation_batches  = (known after apply)
+      + is_ipv6_enabled                 = true
+      + last_modified_time              = (known after apply)
+      + price_class                     = "PriceClass_200"
+      + retain_on_delete                = false
+      + staging                         = false
+      + status                          = (known after apply)
+      + tags                            = {
+          + "Compliance"  = "pci-dss"
+          + "CostCenter"  = "engineering"
+          + "Environment" = "dev"
+          + "ManagedBy"   = "terraform"
+          + "Owner"       = "platform-team"
+          + "Project"     = "serverless-api"
+          + "Version"     = "1.0.0"
+        }
+      + tags_all                        = {
+          + "Compliance"  = "pci-dss"
+          + "CostCenter"  = "engineering"
+          + "Environment" = "dev"
+          + "ManagedBy"   = "terraform"
+          + "Owner"       = "platform-team"
+          + "Project"     = "serverless-api"
+          + "Version"     = "1.0.0"
+        }
+      + trusted_key_groups              = (known after apply)
+      + trusted_signers                 = (known after apply)
+      + wait_for_deployment             = true
+        # (1 unchanged attribute hidden)
+
+      + default_cache_behavior {
+          + allowed_methods        = [
+              + "DELETE",
+              + "GET",
+              + "HEAD",
+              + "OPTIONS",
+              + "PATCH",
+              + "POST",
+              + "PUT",
+            ]
+          + cached_methods         = [
+              + "GET",
+              + "HEAD",
+              + "OPTIONS",
+            ]
+          + compress               = true
+          + default_ttl            = 0
+          + max_ttl                = 86400
+          + min_ttl                = 0
+          + target_origin_id       = "api-gateway-dev"
+          + trusted_key_groups     = (known after apply)
+          + trusted_signers        = (known after apply)
+          + viewer_protocol_policy = "redirect-to-https"
+
+          + forwarded_values {
+              + headers                 = [
+                  + "Accept",
+                  + "Authorization",
+                  + "Content-Type",
+                  + "Origin",
+                ]
+              + query_string            = true
+              + query_string_cache_keys = (known after apply)
+
+              + cookies {
+                  + forward           = "all"
+                  + whitelisted_names = (known after apply)
+                }
+            }
+        }
+
+      + origin {
+          + connection_attempts      = 3
+          + connection_timeout       = 10
+          + domain_name              = (known after apply)
+          + origin_id                = "api-gateway-dev"
+          + origin_path              = "/dev"
+            # (1 unchanged attribute hidden)
+
+          + custom_origin_config {
+              + http_port                = 80
+              + https_port               = 443
+              + origin_keepalive_timeout = 5
+              + origin_protocol_policy   = "https-only"
+              + origin_read_timeout      = 30
+              + origin_ssl_protocols     = [
+                  + "TLSv1.2",
+                ]
+            }
+        }
+
+      + restrictions {
+          + geo_restriction {
+              + locations        = (known after apply)
+              + restriction_type = "none"
+            }
+        }
+
+      + viewer_certificate {
+          + cloudfront_default_certificate = true
+          + minimum_protocol_version       = "TLSv1.2_2021"
+            # (1 unchanged attribute hidden)
+        }
+    }
+
+  # module.networking.aws_cloudwatch_log_group.api_gateway will be created
+  + resource "aws_cloudwatch_log_group" "api_gateway" {
+      + arn               = (known after apply)
+      + id                = (known after apply)
+      + kms_key_id        = (known after apply)
+      + log_group_class   = (known after apply)
+      + name              = "/aws/apigateway/serverless-api-dev"
+      + name_prefix       = (known after apply)
+      + retention_in_days = 7
+      + skip_destroy      = false
+      + tags              = {
+          + "Compliance"  = "pci-dss"
+          + "CostCenter"  = "engineering"
+          + "Environment" = "dev"
+          + "ManagedBy"   = "terraform"
+          + "Owner"       = "platform-team"
+          + "Project"     = "serverless-api"
+          + "Version"     = "1.0.0"
+        }
+      + tags_all          = {
+          + "Compliance"  = "pci-dss"
+          + "CostCenter"  = "engineering"
+          + "Environment" = "dev"
+          + "ManagedBy"   = "terraform"
+          + "Owner"       = "platform-team"
+          + "Project"     = "serverless-api"
+          + "Version"     = "1.0.0"
+        }
+    }
+
+  # module.networking.aws_kms_alias.logs will be created
+  + resource "aws_kms_alias" "logs" {
+      + arn            = (known after apply)
+      + id             = (known after apply)
+      + name           = "alias/serverless-api-dev-api-logs"
+      + name_prefix    = (known after apply)
+      + target_key_arn = (known after apply)
+      + target_key_id  = (known after apply)
+    }
+
+  # module.networking.aws_kms_key.logs will be created
+  + resource "aws_kms_key" "logs" {
+      + arn                                = (known after apply)
+      + bypass_policy_lockout_safety_check = false
+      + customer_master_key_spec           = "SYMMETRIC_DEFAULT"
+      + deletion_window_in_days            = 10
+      + description                        = "KMS key for API Gateway logs encryption"
+      + enable_key_rotation                = true
+      + id                                 = (known after apply)
+      + is_enabled                         = true
+      + key_id                             = (known after apply)
+      + key_usage                          = "ENCRYPT_DECRYPT"
+      + multi_region                       = (known after apply)
+      + policy                             = (known after apply)
+      + tags                               = {
+          + "Compliance"  = "pci-dss"
+          + "CostCenter"  = "engineering"
+          + "Environment" = "dev"
+          + "ManagedBy"   = "terraform"
+          + "Owner"       = "platform-team"
+          + "Project"     = "serverless-api"
+          + "Version"     = "1.0.0"
+        }
+      + tags_all                           = {
+          + "Compliance"  = "pci-dss"
+          + "CostCenter"  = "engineering"
+          + "Environment" = "dev"
+          + "ManagedBy"   = "terraform"
+          + "Owner"       = "platform-team"
+          + "Project"     = "serverless-api"
+          + "Version"     = "1.0.0"
+        }
+    }
+
+  # module.security.aws_cognito_user_pool.main will be created
+  + resource "aws_cognito_user_pool" "main" {
+      + arn                        = (known after apply)
+      + auto_verified_attributes   = [
+          + "email",
+        ]
+      + creation_date              = (known after apply)
+      + custom_domain              = (known after apply)
+      + deletion_protection        = "INACTIVE"
+      + domain                     = (known after apply)
+      + email_verification_message = (known after apply)
+      + email_verification_subject = (known after apply)
+      + endpoint                   = (known after apply)
+      + estimated_number_of_users  = (known after apply)
+      + id                         = (known after apply)
+      + last_modified_date         = (known after apply)
+      + mfa_configuration          = "OFF"
+      + name                       = "serverless-api-dev-users"
+      + sms_verification_message   = (known after apply)
+      + tags                       = {
+          + "Compliance"  = "pci-dss"
+          + "CostCenter"  = "engineering"
+          + "Environment" = "dev"
+          + "ManagedBy"   = "terraform"
+          + "Owner"       = "platform-team"
+          + "Project"     = "serverless-api"
+          + "Version"     = "1.0.0"
+        }
+      + tags_all                   = {
+          + "Compliance"  = "pci-dss"
+          + "CostCenter"  = "engineering"
+          + "Environment" = "dev"
+          + "ManagedBy"   = "terraform"
+          + "Owner"       = "platform-team"
+          + "Project"     = "serverless-api"
+          + "Version"     = "1.0.0"
+        }
+      + username_attributes        = [
+          + "email",
+        ]
+
+      + account_recovery_setting {
+          + recovery_mechanism {
+              + name     = "verified_email"
+              + priority = 1
+            }
+        }
+
+      + admin_create_user_config (known after apply)
+
+      + password_policy {
+          + minimum_length    = 12
+          + require_lowercase = true
+          + require_numbers   = true
+          + require_symbols   = true
+          + require_uppercase = true
+        }
+
+      + schema {
+          + attribute_data_type = "String"
+          + mutable             = false
+          + name                = "email"
+          + required            = true
+        }
+      + schema {
+          + attribute_data_type = "String"
+          + mutable             = false
+          + name                = "tenant_id"
+        }
+      + schema {
+          + attribute_data_type = "String"
+          + mutable             = true
+          + name                = "plan_type"
+        }
+
+      + sms_configuration (known after apply)
+
+      + software_token_mfa_configuration {
+          + enabled = false
+        }
+
+      + user_attribute_update_settings {
+          + attributes_require_verification_before_update = [
+              + "email",
+            ]
+        }
+
+      + verification_message_template (known after apply)
+    }
+
+  # module.security.aws_cognito_user_pool_client.api will be created
+  + resource "aws_cognito_user_pool_client" "api" {
+      + access_token_validity                         = 1
+      + allowed_oauth_flows                           = (known after apply)
+      + allowed_oauth_flows_user_pool_client          = (known after apply)
+      + allowed_oauth_scopes                          = (known after apply)
+      + auth_session_validity                         = (known after apply)
+      + callback_urls                                 = (known after apply)
+      + client_secret                                 = (sensitive value)
+      + default_redirect_uri                          = (known after apply)
+      + enable_propagate_additional_user_context_data = (known after apply)
+      + enable_token_revocation                       = (known after apply)
+      + explicit_auth_flows                           = [
+          + "ALLOW_REFRESH_TOKEN_AUTH",
+          + "ALLOW_USER_PASSWORD_AUTH",
+          + "ALLOW_USER_SRP_AUTH",
+        ]
+      + generate_secret                               = true
+      + id                                            = (known after apply)
+      + id_token_validity                             = 1
+      + logout_urls                                   = (known after apply)
+      + name                                          = "serverless-api-dev-api-client"
+      + prevent_user_existence_errors                 = "ENABLED"
+      + read_attributes                               = (known after apply)
+      + refresh_token_validity                        = 30
+      + supported_identity_providers                  = (known after apply)
+      + user_pool_id                                  = (known after apply)
+      + write_attributes                              = (known after apply)
+
+      + token_validity_units {
+          + access_token  = "hours"
+          + id_token      = "hours"
+          + refresh_token = "days"
+        }
+    }
+
+  # module.security.aws_iam_role.api_authorizer will be created
+  + resource "aws_iam_role" "api_authorizer" {
+      + arn                   = (known after apply)
+      + assume_role_policy    = jsonencode(
+            {
+              + Statement = [
+                  + {
+                      + Action    = "sts:AssumeRole"
+                      + Effect    = "Allow"
+                      + Principal = {
+                          + Service = "apigateway.amazonaws.com"
+                        }
+                    },
+                ]
+              + Version   = "2012-10-17"
+            }
+        )
+      + create_date           = (known after apply)
+      + force_detach_policies = false
+      + id                    = (known after apply)
+      + managed_policy_arns   = (known after apply)
+      + max_session_duration  = 3600
+      + name                  = "serverless-api-dev-api-authorizer"
+      + name_prefix           = (known after apply)
+      + path                  = "/"
+      + tags                  = {
+          + "Compliance"  = "pci-dss"
+          + "CostCenter"  = "engineering"
+          + "Environment" = "dev"
+          + "ManagedBy"   = "terraform"
+          + "Owner"       = "platform-team"
+          + "Project"     = "serverless-api"
+          + "Version"     = "1.0.0"
+        }
+      + tags_all              = {
+          + "Compliance"  = "pci-dss"
+          + "CostCenter"  = "engineering"
+          + "Environment" = "dev"
+          + "ManagedBy"   = "terraform"
+          + "Owner"       = "platform-team"
+          + "Project"     = "serverless-api"
+          + "Version"     = "1.0.0"
+        }
+      + unique_id             = (known after apply)
+
+      + inline_policy (known after apply)
+    }
+
+  # module.security.aws_kms_alias.main will be created
+  + resource "aws_kms_alias" "main" {
+      + arn            = (known after apply)
+      + id             = (known after apply)
+      + name           = "alias/serverless-api-dev"
+      + name_prefix    = (known after apply)
+      + target_key_arn = (known after apply)
+      + target_key_id  = (known after apply)
+    }
+
+  # module.security.aws_kms_key.main will be created
+  + resource "aws_kms_key" "main" {
+      + arn                                = (known after apply)
+      + bypass_policy_lockout_safety_check = false
+      + customer_master_key_spec           = "SYMMETRIC_DEFAULT"
+      + deletion_window_in_days            = 10
+      + description                        = "KMS key for serverless-api dev"
+      + enable_key_rotation                = true
+      + id                                 = (known after apply)
+      + is_enabled                         = true
+      + key_id                             = (known after apply)
+      + key_usage                          = "ENCRYPT_DECRYPT"
+      + multi_region                       = (known after apply)
+      + policy                             = (known after apply)
+      + tags                               = {
+          + "Compliance"  = "pci-dss"
+          + "CostCenter"  = "engineering"
+          + "Environment" = "dev"
+          + "ManagedBy"   = "terraform"
+          + "Owner"       = "platform-team"
+          + "Project"     = "serverless-api"
+          + "Version"     = "1.0.0"
+        }
+      + tags_all                           = {
+          + "Compliance"  = "pci-dss"
+          + "CostCenter"  = "engineering"
+          + "Environment" = "dev"
+          + "ManagedBy"   = "terraform"
+          + "Owner"       = "platform-team"
+          + "Project"     = "serverless-api"
+          + "Version"     = "1.0.0"
+        }
+    }
+
+  # module.storage.aws_cloudwatch_event_rule.s3_events will be created
+  + resource "aws_cloudwatch_event_rule" "s3_events" {
+      + arn            = (known after apply)
+      + description    = "Capture S3 events for processing"
+      + event_bus_name = "default"
+      + event_pattern  = (known after apply)
+      + id             = (known after apply)
+      + name           = "serverless-api-dev-s3-events"
+      + name_prefix    = (known after apply)
+      + tags           = {
+          + "Compliance"  = "pci-dss"
+          + "CostCenter"  = "engineering"
+          + "Environment" = "dev"
+          + "ManagedBy"   = "terraform"
+          + "Owner"       = "platform-team"
+          + "Project"     = "serverless-api"
+          + "Version"     = "1.0.0"
+        }
+      + tags_all       = {
+          + "Compliance"  = "pci-dss"
+          + "CostCenter"  = "engineering"
+          + "Environment" = "dev"
+          + "ManagedBy"   = "terraform"
+          + "Owner"       = "platform-team"
+          + "Project"     = "serverless-api"
+          + "Version"     = "1.0.0"
+        }
+    }
+
+  # module.storage.aws_cloudwatch_event_target.cloudwatch_logs will be created
+  + resource "aws_cloudwatch_event_target" "cloudwatch_logs" {
+      + arn            = (known after apply)
+      + event_bus_name = "default"
+      + id             = (known after apply)
+      + rule           = "serverless-api-dev-s3-events"
+      + target_id      = "CloudWatchLogGroup"
+    }
+
+  # module.storage.aws_cloudwatch_log_group.events will be created
+  + resource "aws_cloudwatch_log_group" "events" {
+      + arn               = (known after apply)
+      + id                = (known after apply)
+      + log_group_class   = (known after apply)
+      + name              = "/aws/events/serverless-api-dev"
+      + name_prefix       = (known after apply)
+      + retention_in_days = 7
+      + skip_destroy      = false
+      + tags              = {
+          + "Compliance"  = "pci-dss"
+          + "CostCenter"  = "engineering"
+          + "Environment" = "dev"
+          + "ManagedBy"   = "terraform"
+          + "Owner"       = "platform-team"
+          + "Project"     = "serverless-api"
+          + "Version"     = "1.0.0"
+        }
+      + tags_all          = {
+          + "Compliance"  = "pci-dss"
+          + "CostCenter"  = "engineering"
+          + "Environment" = "dev"
+          + "ManagedBy"   = "terraform"
+          + "Owner"       = "platform-team"
+          + "Project"     = "serverless-api"
+          + "Version"     = "1.0.0"
+        }
+    }
+
+  # module.storage.aws_s3_bucket.buckets["documents"] will be created
+  + resource "aws_s3_bucket" "buckets" {
+      + acceleration_status         = (known after apply)
+      + acl                         = (known after apply)
+      + arn                         = (known after apply)
+      + bucket                      = "serverless-api-dev-api-documents"
+      + bucket_domain_name          = (known after apply)
+      + bucket_prefix               = (known after apply)
+      + bucket_regional_domain_name = (known after apply)
+      + force_destroy               = false
+      + hosted_zone_id              = (known after apply)
+      + id                          = (known after apply)
+      + object_lock_enabled         = (known after apply)
+      + policy                      = (known after apply)
+      + region                      = (known after apply)
+      + request_payer               = (known after apply)
+      + tags                        = {
+          + "Compliance"  = "pci-dss"
+          + "CostCenter"  = "engineering"
+          + "Environment" = "dev"
+          + "ManagedBy"   = "terraform"
+          + "Name"        = "serverless-api-dev-api-documents"
+          + "Owner"       = "platform-team"
+          + "Project"     = "serverless-api"
+          + "Purpose"     = "api-documents"
+          + "Version"     = "1.0.0"
+        }
+      + tags_all                    = {
+          + "Compliance"  = "pci-dss"
+          + "CostCenter"  = "engineering"
+          + "Environment" = "dev"
+          + "ManagedBy"   = "terraform"
+          + "Name"        = "serverless-api-dev-api-documents"
+          + "Owner"       = "platform-team"
+          + "Project"     = "serverless-api"
+          + "Purpose"     = "api-documents"
+          + "Version"     = "1.0.0"
+        }
+      + website_domain              = (known after apply)
+      + website_endpoint            = (known after apply)
+
+      + cors_rule (known after apply)
+
+      + grant (known after apply)
+
+      + lifecycle_rule (known after apply)
+
+      + logging (known after apply)
+
+      + object_lock_configuration (known after apply)
+
+      + replication_configuration (known after apply)
+
+      + server_side_encryption_configuration (known after apply)
+
+      + versioning (known after apply)
+
+      + website (known after apply)
+    }
+
+  # module.storage.aws_s3_bucket.buckets["logs"] will be created
+  + resource "aws_s3_bucket" "buckets" {
+      + acceleration_status         = (known after apply)
+      + acl                         = (known after apply)
+      + arn                         = (known after apply)
+      + bucket                      = "serverless-api-dev-application-logs"
+      + bucket_domain_name          = (known after apply)
+      + bucket_prefix               = (known after apply)
+      + bucket_regional_domain_name = (known after apply)
+      + force_destroy               = false
+      + hosted_zone_id              = (known after apply)
+      + id                          = (known after apply)
+      + object_lock_enabled         = (known after apply)
+      + policy                      = (known after apply)
+      + region                      = (known after apply)
+      + request_payer               = (known after apply)
+      + tags                        = {
+          + "Compliance"  = "pci-dss"
+          + "CostCenter"  = "engineering"
+          + "Environment" = "dev"
+          + "ManagedBy"   = "terraform"
+          + "Name"        = "serverless-api-dev-application-logs"
+          + "Owner"       = "platform-team"
+          + "Project"     = "serverless-api"
+          + "Purpose"     = "application-logs"
+          + "Version"     = "1.0.0"
+        }
+      + tags_all                    = {
+          + "Compliance"  = "pci-dss"
+          + "CostCenter"  = "engineering"
+          + "Environment" = "dev"
+          + "ManagedBy"   = "terraform"
+          + "Name"        = "serverless-api-dev-application-logs"
+          + "Owner"       = "platform-team"
+          + "Project"     = "serverless-api"
+          + "Purpose"     = "application-logs"
+          + "Version"     = "1.0.0"
+        }
+      + website_domain              = (known after apply)
+      + website_endpoint            = (known after apply)
+
+      + cors_rule (known after apply)
+
+      + grant (known after apply)
+
+      + lifecycle_rule (known after apply)
+
+      + logging (known after apply)
+
+      + object_lock_configuration (known after apply)
+
+      + replication_configuration (known after apply)
+
+      + server_side_encryption_configuration (known after apply)
+
+      + versioning (known after apply)
+
+      + website (known after apply)
+    }
+
+  # module.storage.aws_s3_bucket.buckets["uploads"] will be created
+  + resource "aws_s3_bucket" "buckets" {
+      + acceleration_status         = (known after apply)
+      + acl                         = (known after apply)
+      + arn                         = (known after apply)
+      + bucket                      = "serverless-api-dev-user-uploads"
+      + bucket_domain_name          = (known after apply)
+      + bucket_prefix               = (known after apply)
+      + bucket_regional_domain_name = (known after apply)
+      + force_destroy               = false
+      + hosted_zone_id              = (known after apply)
+      + id                          = (known after apply)
+      + object_lock_enabled         = (known after apply)
+      + policy                      = (known after apply)
+      + region                      = (known after apply)
+      + request_payer               = (known after apply)
+      + tags                        = {
+          + "Compliance"  = "pci-dss"
+          + "CostCenter"  = "engineering"
+          + "Environment" = "dev"
+          + "ManagedBy"   = "terraform"
+          + "Name"        = "serverless-api-dev-user-uploads"
+          + "Owner"       = "platform-team"
+          + "Project"     = "serverless-api"
+          + "Purpose"     = "user-uploads"
+          + "Version"     = "1.0.0"
+        }
+      + tags_all                    = {
+          + "Compliance"  = "pci-dss"
+          + "CostCenter"  = "engineering"
+          + "Environment" = "dev"
+          + "ManagedBy"   = "terraform"
+          + "Name"        = "serverless-api-dev-user-uploads"
+          + "Owner"       = "platform-team"
+          + "Project"     = "serverless-api"
+          + "Purpose"     = "user-uploads"
+          + "Version"     = "1.0.0"
+        }
+      + website_domain              = (known after apply)
+      + website_endpoint            = (known after apply)
+
+      + cors_rule (known after apply)
+
+      + grant (known after apply)
+
+      + lifecycle_rule (known after apply)
+
+      + logging (known after apply)
+
+      + object_lock_configuration (known after apply)
+
+      + replication_configuration (known after apply)
+
+      + server_side_encryption_configuration (known after apply)
+
+      + versioning (known after apply)
+
+      + website (known after apply)
+    }
+
+  # module.storage.aws_s3_bucket_public_access_block.buckets["documents"] will be created
+  + resource "aws_s3_bucket_public_access_block" "buckets" {
+      + block_public_acls       = true
+      + block_public_policy     = true
+      + bucket                  = (known after apply)
+      + id                      = (known after apply)
+      + ignore_public_acls      = true
+      + restrict_public_buckets = true
+    }
+
+  # module.storage.aws_s3_bucket_public_access_block.buckets["logs"] will be created
+  + resource "aws_s3_bucket_public_access_block" "buckets" {
+      + block_public_acls       = true
+      + block_public_policy     = true
+      + bucket                  = (known after apply)
+      + id                      = (known after apply)
+      + ignore_public_acls      = true
+      + restrict_public_buckets = true
+    }
+
+  # module.storage.aws_s3_bucket_public_access_block.buckets["uploads"] will be created
+  + resource "aws_s3_bucket_public_access_block" "buckets" {
+      + block_public_acls       = true
+      + block_public_policy     = true
+      + bucket                  = (known after apply)
+      + id                      = (known after apply)
+      + ignore_public_acls      = true
+      + restrict_public_buckets = true
+    }
+
+  # module.storage.aws_s3_bucket_server_side_encryption_configuration.buckets["documents"] will be created
+  + resource "aws_s3_bucket_server_side_encryption_configuration" "buckets" {
+      + bucket = (known after apply)
+      + id     = (known after apply)
+
+      + rule {
+          + apply_server_side_encryption_by_default {
+              + sse_algorithm     = "AES256"
+                # (1 unchanged attribute hidden)
+            }
+        }
+    }
+
+  # module.storage.aws_s3_bucket_server_side_encryption_configuration.buckets["logs"] will be created
+  + resource "aws_s3_bucket_server_side_encryption_configuration" "buckets" {
+      + bucket = (known after apply)
+      + id     = (known after apply)
+
+      + rule {
+          + apply_server_side_encryption_by_default {
+              + sse_algorithm     = "AES256"
+                # (1 unchanged attribute hidden)
+            }
+        }
+    }
+
+  # module.storage.aws_s3_bucket_server_side_encryption_configuration.buckets["uploads"] will be created
+  + resource "aws_s3_bucket_server_side_encryption_configuration" "buckets" {
+      + bucket = (known after apply)
+      + id     = (known after apply)
+
+      + rule {
+          + apply_server_side_encryption_by_default {
+              + sse_algorithm     = "AES256"
+                # (1 unchanged attribute hidden)
+            }
+        }
+    }
+
+  # module.storage.aws_s3_bucket_versioning.buckets["documents"] will be created
+  + resource "aws_s3_bucket_versioning" "buckets" {
+      + bucket = (known after apply)
+      + id     = (known after apply)
+
+      + versioning_configuration {
+          + mfa_delete = (known after apply)
+          + status     = "Suspended"
+        }
+    }
+
+  # module.storage.aws_s3_bucket_versioning.buckets["logs"] will be created
+  + resource "aws_s3_bucket_versioning" "buckets" {
+      + bucket = (known after apply)
+      + id     = (known after apply)
+
+      + versioning_configuration {
+          + mfa_delete = (known after apply)
+          + status     = "Suspended"
+        }
+    }
+
+  # module.storage.aws_s3_bucket_versioning.buckets["uploads"] will be created
+  + resource "aws_s3_bucket_versioning" "buckets" {
+      + bucket = (known after apply)
+      + id     = (known after apply)
+
+      + versioning_configuration {
+          + mfa_delete = (known after apply)
+          + status     = "Suspended"
+        }
+    }
+
+Plan: 45 to add, 0 to change, 0 to destroy.
+
+Changes to Outputs:
+  + api_gateway_url          = (known after apply)
+  + api_keys                 = (sensitive value)
+  + cloudfront_domain        = (known after apply)
+  + cognito_client_id        = (sensitive value)
+  + cognito_user_pool_id     = (sensitive value)
+  + environment              = "dev"
+  + monitoring_dashboard_url = "https://console.aws.amazon.com/cloudwatch/home?region=ap-southeast-1#dashboards:name=serverless-api-dev"
+  + regions                  = {
+      + primary   = "ap-southeast-1"
+      + secondary = "ap-southeast-2"
+    }
+  + s3_buckets               = {
+      + documents = (known after apply)
+      + logs      = (known after apply)
+      + uploads   = (known after apply)
+    }
+
+Error: 1 error occurred:
+	* all attributes must be indexed. Unused attributes: ["api_key"]
+
+
+
+  with module.database.aws_dynamodb_table.tables["api_data"],
+  on modules\database\main.tf line 1, in resource "aws_dynamodb_table" "tables":
+   1: resource "aws_dynamodb_table" "tables" {
+
+
+Error: Inconsistent conditional result types
+
+  on modules\storage\main.tf line 117, in resource "aws_s3_bucket_intelligent_tiering_configuration" "buckets":
+ 117:   for_each = var.environment == "prod" ? local.buckets : tomap({})
+
+The false result value has the wrong type: map has no element for required
+attribute "uploads".

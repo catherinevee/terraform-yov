@@ -1,0 +1,69 @@
+name: Infrastructure Cost Monitoring
+
+on:
+  pull_request:
+    paths:
+      - '**.tf'
+      - '**.tfvars'
+  schedule:
+    - cron: '0 8 * * MON'  # Weekly cost report on Mondays
+
+jobs:
+  infracost:
+    name: Analyze Infrastructure Costs
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Infracost
+        uses: infracost/setup-infracost-action@v2
+        with:
+          api-key: ${{ secrets.INFRACOST_API_KEY }}
+
+      - name: Generate Infracost baseline
+        run: |
+          infracost breakdown \
+            --path . \
+            --format json \
+            --out-file /tmp/infracost-base.json
+
+      - name: Generate Infracost diff
+        if: github.event_name == 'pull_request'
+        run: |
+          infracost diff \
+            --path . \
+            --format json \
+            --compare-to /tmp/infracost-base.json \
+            --out-file /tmp/infracost.json
+
+      - name: Post Infracost comment
+        if: github.event_name == 'pull_request'
+        run: |
+          infracost comment github \
+            --path /tmp/infracost.json \
+            --repo ${{ github.repository }} \
+            --pull-request ${{ github.event.pull_request.number }} \
+            --github-token ${{ secrets.GITHUB_TOKEN }} \
+            --policy-path infracost-policy.rego
+
+      - name: Generate Cost Report
+        if: github.event_name == 'schedule'
+        run: |
+          infracost breakdown \
+            --path . \
+            --format table \
+            --show-skipped
+
+      - name: Cost Alert
+        if: github.event_name == 'pull_request'
+        run: |
+          # Check if costs exceed threshold
+          MONTHLY_COST=$(infracost breakdown --path . --format json | jq '.totalMonthlyCost')
+          if (( $(echo "$MONTHLY_COST > 1000" | bc -l) )); then
+            echo "⚠️ WARNING: Estimated monthly cost exceeds $1000"
+            exit 1
+          fi

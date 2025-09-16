@@ -1,0 +1,1611 @@
+[0m[1mmodule.monitoring.data.aws_region.current: Reading...[0m[0m
+[0m[1mmodule.networking.data.aws_region.current: Reading...[0m[0m
+[0m[1mmodule.compute.data.aws_iam_policy_document.lambda_assume_role: Reading...[0m[0m
+[0m[1mmodule.networking.data.aws_region.current: Read complete after 0s [id=ap-southeast-1][0m
+[0m[1mmodule.monitoring.data.aws_region.current: Read complete after 0s [id=ap-southeast-1][0m
+[0m[1mmodule.compute.data.aws_iam_policy_document.lambda_assume_role: Read complete after 0s [id=2690255455][0m
+
+Terraform used the selected providers to generate the following execution
+plan. Resource actions are indicated with the following symbols:
+  [32m+[0m create[0m
+
+Terraform planned the following actions, but then encountered a problem:
+
+[1m  # module.compute.aws_cloudwatch_log_group.step_functions[0m will be created
+[0m  [32m+[0m[0m resource "aws_cloudwatch_log_group" "step_functions" {
+      [32m+[0m[0m arn               = (known after apply)
+      [32m+[0m[0m id                = (known after apply)
+      [32m+[0m[0m log_group_class   = (known after apply)
+      [32m+[0m[0m name              = "/aws/vendedlogs/states/serverless-api-dev-orchestrator"
+      [32m+[0m[0m name_prefix       = (known after apply)
+      [32m+[0m[0m retention_in_days = 7
+      [32m+[0m[0m skip_destroy      = false
+      [32m+[0m[0m tags              = {
+          [32m+[0m[0m "Compliance"  = "pci-dss"
+          [32m+[0m[0m "CostCenter"  = "engineering"
+          [32m+[0m[0m "Environment" = "dev"
+          [32m+[0m[0m "ManagedBy"   = "terraform"
+          [32m+[0m[0m "Owner"       = "platform-team"
+          [32m+[0m[0m "Project"     = "serverless-api"
+          [32m+[0m[0m "Version"     = "1.0.0"
+        }
+      [32m+[0m[0m tags_all          = {
+          [32m+[0m[0m "Compliance"  = "pci-dss"
+          [32m+[0m[0m "CostCenter"  = "engineering"
+          [32m+[0m[0m "Environment" = "dev"
+          [32m+[0m[0m "ManagedBy"   = "terraform"
+          [32m+[0m[0m "Owner"       = "platform-team"
+          [32m+[0m[0m "Project"     = "serverless-api"
+          [32m+[0m[0m "Version"     = "1.0.0"
+        }
+        [90m# (1 unchanged attribute hidden)[0m[0m
+    }
+
+[1m  # module.compute.aws_iam_role.step_functions[0m will be created
+[0m  [32m+[0m[0m resource "aws_iam_role" "step_functions" {
+      [32m+[0m[0m arn                   = (known after apply)
+      [32m+[0m[0m assume_role_policy    = jsonencode(
+            {
+              [32m+[0m[0m Statement = [
+                  [32m+[0m[0m {
+                      [32m+[0m[0m Action    = "sts:AssumeRole"
+                      [32m+[0m[0m Effect    = "Allow"
+                      [32m+[0m[0m Principal = {
+                          [32m+[0m[0m Service = "states.amazonaws.com"
+                        }
+                    },
+                ]
+              [32m+[0m[0m Version   = "2012-10-17"
+            }
+        )
+      [32m+[0m[0m create_date           = (known after apply)
+      [32m+[0m[0m force_detach_policies = false
+      [32m+[0m[0m id                    = (known after apply)
+      [32m+[0m[0m managed_policy_arns   = (known after apply)
+      [32m+[0m[0m max_session_duration  = 3600
+      [32m+[0m[0m name                  = "serverless-api-dev-stepfunctions-role"
+      [32m+[0m[0m name_prefix           = (known after apply)
+      [32m+[0m[0m path                  = "/"
+      [32m+[0m[0m tags                  = {
+          [32m+[0m[0m "Compliance"  = "pci-dss"
+          [32m+[0m[0m "CostCenter"  = "engineering"
+          [32m+[0m[0m "Environment" = "dev"
+          [32m+[0m[0m "ManagedBy"   = "terraform"
+          [32m+[0m[0m "Owner"       = "platform-team"
+          [32m+[0m[0m "Project"     = "serverless-api"
+          [32m+[0m[0m "Version"     = "1.0.0"
+        }
+      [32m+[0m[0m tags_all              = {
+          [32m+[0m[0m "Compliance"  = "pci-dss"
+          [32m+[0m[0m "CostCenter"  = "engineering"
+          [32m+[0m[0m "Environment" = "dev"
+          [32m+[0m[0m "ManagedBy"   = "terraform"
+          [32m+[0m[0m "Owner"       = "platform-team"
+          [32m+[0m[0m "Project"     = "serverless-api"
+          [32m+[0m[0m "Version"     = "1.0.0"
+        }
+      [32m+[0m[0m unique_id             = (known after apply)
+
+      [32m+[0m[0m inline_policy (known after apply)
+    }
+
+[1m  # module.compute.aws_lambda_layer_version.shared[0m will be created
+[0m  [32m+[0m[0m resource "aws_lambda_layer_version" "shared" {
+      [32m+[0m[0m arn                         = (known after apply)
+      [32m+[0m[0m compatible_runtimes         = [
+          [32m+[0m[0m "nodejs18.x",
+        ]
+      [32m+[0m[0m created_date                = (known after apply)
+      [32m+[0m[0m description                 = "Shared dependencies for Lambda functions"
+      [32m+[0m[0m filename                    = "modules/compute/lambda-layer.zip"
+      [32m+[0m[0m id                          = (known after apply)
+      [32m+[0m[0m layer_arn                   = (known after apply)
+      [32m+[0m[0m layer_name                  = "serverless-api-dev-shared"
+      [32m+[0m[0m signing_job_arn             = (known after apply)
+      [32m+[0m[0m signing_profile_version_arn = (known after apply)
+      [32m+[0m[0m skip_destroy                = false
+      [32m+[0m[0m source_code_hash            = (known after apply)
+      [32m+[0m[0m source_code_size            = (known after apply)
+      [32m+[0m[0m version                     = (known after apply)
+    }
+
+[1m  # module.database.aws_dynamodb_table.tables["analytics"][0m will be created
+[0m  [32m+[0m[0m resource "aws_dynamodb_table" "tables" {
+      [32m+[0m[0m arn              = (known after apply)
+      [32m+[0m[0m billing_mode     = "PAY_PER_REQUEST"
+      [32m+[0m[0m hash_key         = "metric_id"
+      [32m+[0m[0m id               = (known after apply)
+      [32m+[0m[0m name             = "serverless-api-dev-analytics"
+      [32m+[0m[0m range_key        = "window"
+      [32m+[0m[0m read_capacity    = (known after apply)
+      [32m+[0m[0m stream_arn       = (known after apply)
+      [32m+[0m[0m stream_enabled   = true
+      [32m+[0m[0m stream_label     = (known after apply)
+      [32m+[0m[0m stream_view_type = "NEW_AND_OLD_IMAGES"
+      [32m+[0m[0m tags             = {
+          [32m+[0m[0m "Compliance"  = "pci-dss"
+          [32m+[0m[0m "CostCenter"  = "engineering"
+          [32m+[0m[0m "Environment" = "dev"
+          [32m+[0m[0m "ManagedBy"   = "terraform"
+          [32m+[0m[0m "Name"        = "serverless-api-dev-analytics"
+          [32m+[0m[0m "Owner"       = "platform-team"
+          [32m+[0m[0m "Project"     = "serverless-api"
+          [32m+[0m[0m "Version"     = "1.0.0"
+        }
+      [32m+[0m[0m tags_all         = {
+          [32m+[0m[0m "Compliance"  = "pci-dss"
+          [32m+[0m[0m "CostCenter"  = "engineering"
+          [32m+[0m[0m "Environment" = "dev"
+          [32m+[0m[0m "ManagedBy"   = "terraform"
+          [32m+[0m[0m "Name"        = "serverless-api-dev-analytics"
+          [32m+[0m[0m "Owner"       = "platform-team"
+          [32m+[0m[0m "Project"     = "serverless-api"
+          [32m+[0m[0m "Version"     = "1.0.0"
+        }
+      [32m+[0m[0m write_capacity   = (known after apply)
+
+      [32m+[0m[0m attribute {
+          [32m+[0m[0m name = "metric_id"
+          [32m+[0m[0m type = "S"
+        }
+      [32m+[0m[0m attribute {
+          [32m+[0m[0m name = "tenant_id"
+          [32m+[0m[0m type = "S"
+        }
+      [32m+[0m[0m attribute {
+          [32m+[0m[0m name = "window"
+          [32m+[0m[0m type = "S"
+        }
+
+      [32m+[0m[0m global_secondary_index {
+          [32m+[0m[0m hash_key           = "tenant_id"
+          [32m+[0m[0m name               = "tenant-metrics-index"
+          [32m+[0m[0m non_key_attributes = []
+          [32m+[0m[0m projection_type    = "ALL"
+          [32m+[0m[0m range_key          = "window"
+        }
+
+      [32m+[0m[0m point_in_time_recovery {
+          [32m+[0m[0m enabled = true
+        }
+
+      [32m+[0m[0m server_side_encryption {
+          [32m+[0m[0m enabled     = true
+          [32m+[0m[0m kms_key_arn = (known after apply)
+        }
+
+      [32m+[0m[0m ttl {
+          [32m+[0m[0m attribute_name = "ttl"
+          [32m+[0m[0m enabled        = false
+        }
+    }
+
+[1m  # module.database.aws_dynamodb_table.tables["tenants"][0m will be created
+[0m  [32m+[0m[0m resource "aws_dynamodb_table" "tables" {
+      [32m+[0m[0m arn              = (known after apply)
+      [32m+[0m[0m billing_mode     = "PAY_PER_REQUEST"
+      [32m+[0m[0m hash_key         = "tenant_id"
+      [32m+[0m[0m id               = (known after apply)
+      [32m+[0m[0m name             = "serverless-api-dev-tenants"
+      [32m+[0m[0m range_key        = "created_at"
+      [32m+[0m[0m read_capacity    = (known after apply)
+      [32m+[0m[0m stream_arn       = (known after apply)
+      [32m+[0m[0m stream_enabled   = true
+      [32m+[0m[0m stream_label     = (known after apply)
+      [32m+[0m[0m stream_view_type = "NEW_AND_OLD_IMAGES"
+      [32m+[0m[0m tags             = {
+          [32m+[0m[0m "Compliance"  = "pci-dss"
+          [32m+[0m[0m "CostCenter"  = "engineering"
+          [32m+[0m[0m "Environment" = "dev"
+          [32m+[0m[0m "ManagedBy"   = "terraform"
+          [32m+[0m[0m "Name"        = "serverless-api-dev-tenants"
+          [32m+[0m[0m "Owner"       = "platform-team"
+          [32m+[0m[0m "Project"     = "serverless-api"
+          [32m+[0m[0m "Version"     = "1.0.0"
+        }
+      [32m+[0m[0m tags_all         = {
+          [32m+[0m[0m "Compliance"  = "pci-dss"
+          [32m+[0m[0m "CostCenter"  = "engineering"
+          [32m+[0m[0m "Environment" = "dev"
+          [32m+[0m[0m "ManagedBy"   = "terraform"
+          [32m+[0m[0m "Name"        = "serverless-api-dev-tenants"
+          [32m+[0m[0m "Owner"       = "platform-team"
+          [32m+[0m[0m "Project"     = "serverless-api"
+          [32m+[0m[0m "Version"     = "1.0.0"
+        }
+      [32m+[0m[0m write_capacity   = (known after apply)
+
+      [32m+[0m[0m attribute {
+          [32m+[0m[0m name = "created_at"
+          [32m+[0m[0m type = "N"
+        }
+      [32m+[0m[0m attribute {
+          [32m+[0m[0m name = "plan_type"
+          [32m+[0m[0m type = "S"
+        }
+      [32m+[0m[0m attribute {
+          [32m+[0m[0m name = "status"
+          [32m+[0m[0m type = "S"
+        }
+      [32m+[0m[0m attribute {
+          [32m+[0m[0m name = "tenant_id"
+          [32m+[0m[0m type = "S"
+        }
+
+      [32m+[0m[0m global_secondary_index {
+          [32m+[0m[0m hash_key           = "plan_type"
+          [32m+[0m[0m name               = "plan-index"
+          [32m+[0m[0m non_key_attributes = []
+          [32m+[0m[0m projection_type    = "KEYS_ONLY"
+            [90m# (1 unchanged attribute hidden)[0m[0m
+        }
+      [32m+[0m[0m global_secondary_index {
+          [32m+[0m[0m hash_key           = "status"
+          [32m+[0m[0m name               = "status-index"
+          [32m+[0m[0m non_key_attributes = []
+          [32m+[0m[0m projection_type    = "ALL"
+          [32m+[0m[0m range_key          = "created_at"
+        }
+
+      [32m+[0m[0m point_in_time_recovery {
+          [32m+[0m[0m enabled = true
+        }
+
+      [32m+[0m[0m server_side_encryption {
+          [32m+[0m[0m enabled     = true
+          [32m+[0m[0m kms_key_arn = (known after apply)
+        }
+
+      [32m+[0m[0m ttl {
+          [32m+[0m[0m attribute_name = "ttl"
+          [32m+[0m[0m enabled        = false
+        }
+    }
+
+[1m  # module.monitoring.aws_cloudwatch_dashboard.main[0m will be created
+[0m  [32m+[0m[0m resource "aws_cloudwatch_dashboard" "main" {
+      [32m+[0m[0m dashboard_arn  = (known after apply)
+      [32m+[0m[0m dashboard_body = jsonencode(
+            {
+              [32m+[0m[0m widgets = [
+                  [32m+[0m[0m {
+                      [32m+[0m[0m properties = {
+                          [32m+[0m[0m metrics = [
+                              [32m+[0m[0m [
+                                  [32m+[0m[0m "AWS/Lambda",
+                                  [32m+[0m[0m "Invocations",
+                                  [32m+[0m[0m {
+                                      [32m+[0m[0m stat = "Sum"
+                                    },
+                                ],
+                              [32m+[0m[0m [
+                                  [32m+[0m[0m ".",
+                                  [32m+[0m[0m "Errors",
+                                  [32m+[0m[0m {
+                                      [32m+[0m[0m stat = "Sum"
+                                    },
+                                ],
+                              [32m+[0m[0m [
+                                  [32m+[0m[0m ".",
+                                  [32m+[0m[0m "Duration",
+                                  [32m+[0m[0m {
+                                      [32m+[0m[0m stat = "Average"
+                                    },
+                                ],
+                              [32m+[0m[0m [
+                                  [32m+[0m[0m ".",
+                                  [32m+[0m[0m "Throttles",
+                                  [32m+[0m[0m {
+                                      [32m+[0m[0m stat = "Sum"
+                                    },
+                                ],
+                            ]
+                          [32m+[0m[0m period  = 300
+                          [32m+[0m[0m region  = "ap-southeast-1"
+                          [32m+[0m[0m stat    = "Average"
+                          [32m+[0m[0m title   = "Lambda Metrics"
+                        }
+                      [32m+[0m[0m type       = "metric"
+                    },
+                  [32m+[0m[0m {
+                      [32m+[0m[0m properties = {
+                          [32m+[0m[0m metrics = [
+                              [32m+[0m[0m [
+                                  [32m+[0m[0m "AWS/ApiGateway",
+                                  [32m+[0m[0m "4XXError",
+                                  [32m+[0m[0m {
+                                      [32m+[0m[0m stat = "Sum"
+                                    },
+                                ],
+                              [32m+[0m[0m [
+                                  [32m+[0m[0m ".",
+                                  [32m+[0m[0m "5XXError",
+                                  [32m+[0m[0m {
+                                      [32m+[0m[0m stat = "Sum"
+                                    },
+                                ],
+                              [32m+[0m[0m [
+                                  [32m+[0m[0m ".",
+                                  [32m+[0m[0m "Count",
+                                  [32m+[0m[0m {
+                                      [32m+[0m[0m stat = "Sum"
+                                    },
+                                ],
+                              [32m+[0m[0m [
+                                  [32m+[0m[0m ".",
+                                  [32m+[0m[0m "Latency",
+                                  [32m+[0m[0m {
+                                      [32m+[0m[0m stat = "Average"
+                                    },
+                                ],
+                            ]
+                          [32m+[0m[0m period  = 300
+                          [32m+[0m[0m region  = "ap-southeast-1"
+                          [32m+[0m[0m stat    = "Sum"
+                          [32m+[0m[0m title   = "API Gateway Metrics"
+                        }
+                      [32m+[0m[0m type       = "metric"
+                    },
+                  [32m+[0m[0m {
+                      [32m+[0m[0m properties = {
+                          [32m+[0m[0m metrics = [
+                              [32m+[0m[0m [
+                                  [32m+[0m[0m "AWS/DynamoDB",
+                                  [32m+[0m[0m "ConsumedReadCapacityUnits",
+                                  [32m+[0m[0m {
+                                      [32m+[0m[0m stat = "Sum"
+                                    },
+                                ],
+                              [32m+[0m[0m [
+                                  [32m+[0m[0m ".",
+                                  [32m+[0m[0m "ConsumedWriteCapacityUnits",
+                                  [32m+[0m[0m {
+                                      [32m+[0m[0m stat = "Sum"
+                                    },
+                                ],
+                              [32m+[0m[0m [
+                                  [32m+[0m[0m ".",
+                                  [32m+[0m[0m "UserErrors",
+                                  [32m+[0m[0m {
+                                      [32m+[0m[0m stat = "Sum"
+                                    },
+                                ],
+                              [32m+[0m[0m [
+                                  [32m+[0m[0m ".",
+                                  [32m+[0m[0m "SystemErrors",
+                                  [32m+[0m[0m {
+                                      [32m+[0m[0m stat = "Sum"
+                                    },
+                                ],
+                            ]
+                          [32m+[0m[0m period  = 300
+                          [32m+[0m[0m region  = "ap-southeast-1"
+                          [32m+[0m[0m stat    = "Sum"
+                          [32m+[0m[0m title   = "DynamoDB Metrics"
+                        }
+                      [32m+[0m[0m type       = "metric"
+                    },
+                ]
+            }
+        )
+      [32m+[0m[0m dashboard_name = "serverless-api-dev"
+      [32m+[0m[0m id             = (known after apply)
+    }
+
+[1m  # module.monitoring.aws_cloudwatch_metric_alarm.api_4xx[0m will be created
+[0m  [32m+[0m[0m resource "aws_cloudwatch_metric_alarm" "api_4xx" {
+      [32m+[0m[0m actions_enabled                       = true
+      [32m+[0m[0m alarm_actions                         = (known after apply)
+      [32m+[0m[0m alarm_description                     = "API Gateway 4xx errors too high"
+      [32m+[0m[0m alarm_name                            = "serverless-api-dev-api-4xx"
+      [32m+[0m[0m arn                                   = (known after apply)
+      [32m+[0m[0m comparison_operator                   = "GreaterThanThreshold"
+      [32m+[0m[0m dimensions                            = (known after apply)
+      [32m+[0m[0m evaluate_low_sample_count_percentiles = (known after apply)
+      [32m+[0m[0m evaluation_periods                    = 2
+      [32m+[0m[0m id                                    = (known after apply)
+      [32m+[0m[0m metric_name                           = "4XXError"
+      [32m+[0m[0m namespace                             = "AWS/ApiGateway"
+      [32m+[0m[0m period                                = 60
+      [32m+[0m[0m statistic                             = "Sum"
+      [32m+[0m[0m tags                                  = {
+          [32m+[0m[0m "Compliance"  = "pci-dss"
+          [32m+[0m[0m "CostCenter"  = "engineering"
+          [32m+[0m[0m "Environment" = "dev"
+          [32m+[0m[0m "ManagedBy"   = "terraform"
+          [32m+[0m[0m "Owner"       = "platform-team"
+          [32m+[0m[0m "Project"     = "serverless-api"
+          [32m+[0m[0m "Version"     = "1.0.0"
+        }
+      [32m+[0m[0m tags_all                              = {
+          [32m+[0m[0m "Compliance"  = "pci-dss"
+          [32m+[0m[0m "CostCenter"  = "engineering"
+          [32m+[0m[0m "Environment" = "dev"
+          [32m+[0m[0m "ManagedBy"   = "terraform"
+          [32m+[0m[0m "Owner"       = "platform-team"
+          [32m+[0m[0m "Project"     = "serverless-api"
+          [32m+[0m[0m "Version"     = "1.0.0"
+        }
+      [32m+[0m[0m threshold                             = 100
+      [32m+[0m[0m treat_missing_data                    = "missing"
+    }
+
+[1m  # module.monitoring.aws_cloudwatch_metric_alarm.api_5xx[0m will be created
+[0m  [32m+[0m[0m resource "aws_cloudwatch_metric_alarm" "api_5xx" {
+      [32m+[0m[0m actions_enabled                       = true
+      [32m+[0m[0m alarm_actions                         = (known after apply)
+      [32m+[0m[0m alarm_description                     = "API Gateway 5xx errors detected"
+      [32m+[0m[0m alarm_name                            = "serverless-api-dev-api-5xx"
+      [32m+[0m[0m arn                                   = (known after apply)
+      [32m+[0m[0m comparison_operator                   = "GreaterThanThreshold"
+      [32m+[0m[0m dimensions                            = (known after apply)
+      [32m+[0m[0m evaluate_low_sample_count_percentiles = (known after apply)
+      [32m+[0m[0m evaluation_periods                    = 1
+      [32m+[0m[0m id                                    = (known after apply)
+      [32m+[0m[0m metric_name                           = "5XXError"
+      [32m+[0m[0m namespace                             = "AWS/ApiGateway"
+      [32m+[0m[0m period                                = 60
+      [32m+[0m[0m statistic                             = "Sum"
+      [32m+[0m[0m tags                                  = {
+          [32m+[0m[0m "Compliance"  = "pci-dss"
+          [32m+[0m[0m "CostCenter"  = "engineering"
+          [32m+[0m[0m "Environment" = "dev"
+          [32m+[0m[0m "ManagedBy"   = "terraform"
+          [32m+[0m[0m "Owner"       = "platform-team"
+          [32m+[0m[0m "Project"     = "serverless-api"
+          [32m+[0m[0m "Version"     = "1.0.0"
+        }
+      [32m+[0m[0m tags_all                              = {
+          [32m+[0m[0m "Compliance"  = "pci-dss"
+          [32m+[0m[0m "CostCenter"  = "engineering"
+          [32m+[0m[0m "Environment" = "dev"
+          [32m+[0m[0m "ManagedBy"   = "terraform"
+          [32m+[0m[0m "Owner"       = "platform-team"
+          [32m+[0m[0m "Project"     = "serverless-api"
+          [32m+[0m[0m "Version"     = "1.0.0"
+        }
+      [32m+[0m[0m threshold                             = 10
+      [32m+[0m[0m treat_missing_data                    = "missing"
+    }
+
+[1m  # module.monitoring.aws_sns_topic.alerts[0m will be created
+[0m  [32m+[0m[0m resource "aws_sns_topic" "alerts" {
+      [32m+[0m[0m arn                         = (known after apply)
+      [32m+[0m[0m beginning_archive_time      = (known after apply)
+      [32m+[0m[0m content_based_deduplication = false
+      [32m+[0m[0m fifo_topic                  = false
+      [32m+[0m[0m id                          = (known after apply)
+      [32m+[0m[0m kms_master_key_id           = "alias/aws/sns"
+      [32m+[0m[0m name                        = "serverless-api-dev-alerts"
+      [32m+[0m[0m name_prefix                 = (known after apply)
+      [32m+[0m[0m owner                       = (known after apply)
+      [32m+[0m[0m policy                      = (known after apply)
+      [32m+[0m[0m signature_version           = (known after apply)
+      [32m+[0m[0m tags                        = {
+          [32m+[0m[0m "Compliance"  = "pci-dss"
+          [32m+[0m[0m "CostCenter"  = "engineering"
+          [32m+[0m[0m "Environment" = "dev"
+          [32m+[0m[0m "ManagedBy"   = "terraform"
+          [32m+[0m[0m "Owner"       = "platform-team"
+          [32m+[0m[0m "Project"     = "serverless-api"
+          [32m+[0m[0m "Version"     = "1.0.0"
+        }
+      [32m+[0m[0m tags_all                    = {
+          [32m+[0m[0m "Compliance"  = "pci-dss"
+          [32m+[0m[0m "CostCenter"  = "engineering"
+          [32m+[0m[0m "Environment" = "dev"
+          [32m+[0m[0m "ManagedBy"   = "terraform"
+          [32m+[0m[0m "Owner"       = "platform-team"
+          [32m+[0m[0m "Project"     = "serverless-api"
+          [32m+[0m[0m "Version"     = "1.0.0"
+        }
+      [32m+[0m[0m tracing_config              = (known after apply)
+    }
+
+[1m  # module.networking.aws_api_gateway_api_key.keys["basic"][0m will be created
+[0m  [32m+[0m[0m resource "aws_api_gateway_api_key" "keys" {
+      [32m+[0m[0m arn               = (known after apply)
+      [32m+[0m[0m created_date      = (known after apply)
+      [32m+[0m[0m description       = "API key for basic usage plan"
+      [32m+[0m[0m enabled           = true
+      [32m+[0m[0m id                = (known after apply)
+      [32m+[0m[0m last_updated_date = (known after apply)
+      [32m+[0m[0m name              = "serverless-api-dev-basic-key"
+      [32m+[0m[0m tags              = {
+          [32m+[0m[0m "Compliance"  = "pci-dss"
+          [32m+[0m[0m "CostCenter"  = "engineering"
+          [32m+[0m[0m "Environment" = "dev"
+          [32m+[0m[0m "ManagedBy"   = "terraform"
+          [32m+[0m[0m "Owner"       = "platform-team"
+          [32m+[0m[0m "Project"     = "serverless-api"
+          [32m+[0m[0m "Version"     = "1.0.0"
+        }
+      [32m+[0m[0m tags_all          = {
+          [32m+[0m[0m "Compliance"  = "pci-dss"
+          [32m+[0m[0m "CostCenter"  = "engineering"
+          [32m+[0m[0m "Environment" = "dev"
+          [32m+[0m[0m "ManagedBy"   = "terraform"
+          [32m+[0m[0m "Owner"       = "platform-team"
+          [32m+[0m[0m "Project"     = "serverless-api"
+          [32m+[0m[0m "Version"     = "1.0.0"
+        }
+      [32m+[0m[0m value             = (sensitive value)
+    }
+
+[1m  # module.networking.aws_api_gateway_api_key.keys["free"][0m will be created
+[0m  [32m+[0m[0m resource "aws_api_gateway_api_key" "keys" {
+      [32m+[0m[0m arn               = (known after apply)
+      [32m+[0m[0m created_date      = (known after apply)
+      [32m+[0m[0m description       = "API key for free usage plan"
+      [32m+[0m[0m enabled           = true
+      [32m+[0m[0m id                = (known after apply)
+      [32m+[0m[0m last_updated_date = (known after apply)
+      [32m+[0m[0m name              = "serverless-api-dev-free-key"
+      [32m+[0m[0m tags              = {
+          [32m+[0m[0m "Compliance"  = "pci-dss"
+          [32m+[0m[0m "CostCenter"  = "engineering"
+          [32m+[0m[0m "Environment" = "dev"
+          [32m+[0m[0m "ManagedBy"   = "terraform"
+          [32m+[0m[0m "Owner"       = "platform-team"
+          [32m+[0m[0m "Project"     = "serverless-api"
+          [32m+[0m[0m "Version"     = "1.0.0"
+        }
+      [32m+[0m[0m tags_all          = {
+          [32m+[0m[0m "Compliance"  = "pci-dss"
+          [32m+[0m[0m "CostCenter"  = "engineering"
+          [32m+[0m[0m "Environment" = "dev"
+          [32m+[0m[0m "ManagedBy"   = "terraform"
+          [32m+[0m[0m "Owner"       = "platform-team"
+          [32m+[0m[0m "Project"     = "serverless-api"
+          [32m+[0m[0m "Version"     = "1.0.0"
+        }
+      [32m+[0m[0m value             = (sensitive value)
+    }
+
+[1m  # module.networking.aws_api_gateway_deployment.main[0m will be created
+[0m  [32m+[0m[0m resource "aws_api_gateway_deployment" "main" {
+      [32m+[0m[0m created_date  = (known after apply)
+      [32m+[0m[0m execution_arn = (known after apply)
+      [32m+[0m[0m id            = (known after apply)
+      [32m+[0m[0m invoke_url    = (known after apply)
+      [32m+[0m[0m rest_api_id   = (known after apply)
+      [32m+[0m[0m triggers      = (known after apply)
+    }
+
+[1m  # module.networking.aws_api_gateway_gateway_response.cors[0m will be created
+[0m  [32m+[0m[0m resource "aws_api_gateway_gateway_response" "cors" {
+      [32m+[0m[0m id                  = (known after apply)
+      [32m+[0m[0m response_parameters = {
+          [32m+[0m[0m "gatewayresponse.header.Access-Control-Allow-Headers" = "'*'"
+          [32m+[0m[0m "gatewayresponse.header.Access-Control-Allow-Methods" = "'*'"
+          [32m+[0m[0m "gatewayresponse.header.Access-Control-Allow-Origin"  = "'*'"
+        }
+      [32m+[0m[0m response_templates  = {
+          [32m+[0m[0m "application/json" = "{\"message\":$context.error.messageString}"
+        }
+      [32m+[0m[0m response_type       = "DEFAULT_4XX"
+      [32m+[0m[0m rest_api_id         = (known after apply)
+      [32m+[0m[0m status_code         = "4XX"
+    }
+
+[1m  # module.networking.aws_api_gateway_method_settings.main[0m will be created
+[0m  [32m+[0m[0m resource "aws_api_gateway_method_settings" "main" {
+      [32m+[0m[0m id          = (known after apply)
+      [32m+[0m[0m method_path = "*/*"
+      [32m+[0m[0m rest_api_id = (known after apply)
+      [32m+[0m[0m stage_name  = "dev"
+
+      [32m+[0m[0m settings {
+          [32m+[0m[0m cache_data_encrypted                       = (known after apply)
+          [32m+[0m[0m cache_ttl_in_seconds                       = (known after apply)
+          [32m+[0m[0m caching_enabled                            = (known after apply)
+          [32m+[0m[0m data_trace_enabled                         = true
+          [32m+[0m[0m logging_level                              = "INFO"
+          [32m+[0m[0m metrics_enabled                            = true
+          [32m+[0m[0m require_authorization_for_cache_control    = (known after apply)
+          [32m+[0m[0m throttling_burst_limit                     = 2000
+          [32m+[0m[0m throttling_rate_limit                      = 1000
+          [32m+[0m[0m unauthorized_cache_control_header_strategy = (known after apply)
+        }
+    }
+
+[1m  # module.networking.aws_api_gateway_request_validator.main[0m will be created
+[0m  [32m+[0m[0m resource "aws_api_gateway_request_validator" "main" {
+      [32m+[0m[0m id                          = (known after apply)
+      [32m+[0m[0m name                        = "serverless-api-dev-validator"
+      [32m+[0m[0m rest_api_id                 = (known after apply)
+      [32m+[0m[0m validate_request_body       = true
+      [32m+[0m[0m validate_request_parameters = true
+    }
+
+[1m  # module.networking.aws_api_gateway_rest_api.main[0m will be created
+[0m  [32m+[0m[0m resource "aws_api_gateway_rest_api" "main" {
+      [32m+[0m[0m api_key_source               = (known after apply)
+      [32m+[0m[0m arn                          = (known after apply)
+      [32m+[0m[0m binary_media_types           = (known after apply)
+      [32m+[0m[0m created_date                 = (known after apply)
+      [32m+[0m[0m description                  = "REST API for serverless-api dev environment"
+      [32m+[0m[0m disable_execute_api_endpoint = (known after apply)
+      [32m+[0m[0m execution_arn                = (known after apply)
+      [32m+[0m[0m id                           = (known after apply)
+      [32m+[0m[0m minimum_compression_size     = (known after apply)
+      [32m+[0m[0m name                         = "serverless-api-dev"
+      [32m+[0m[0m policy                       = (known after apply)
+      [32m+[0m[0m root_resource_id             = (known after apply)
+      [32m+[0m[0m tags                         = {
+          [32m+[0m[0m "Compliance"  = "pci-dss"
+          [32m+[0m[0m "CostCenter"  = "engineering"
+          [32m+[0m[0m "Environment" = "dev"
+          [32m+[0m[0m "ManagedBy"   = "terraform"
+          [32m+[0m[0m "Owner"       = "platform-team"
+          [32m+[0m[0m "Project"     = "serverless-api"
+          [32m+[0m[0m "Version"     = "1.0.0"
+        }
+      [32m+[0m[0m tags_all                     = {
+          [32m+[0m[0m "Compliance"  = "pci-dss"
+          [32m+[0m[0m "CostCenter"  = "engineering"
+          [32m+[0m[0m "Environment" = "dev"
+          [32m+[0m[0m "ManagedBy"   = "terraform"
+          [32m+[0m[0m "Owner"       = "platform-team"
+          [32m+[0m[0m "Project"     = "serverless-api"
+          [32m+[0m[0m "Version"     = "1.0.0"
+        }
+
+      [32m+[0m[0m endpoint_configuration {
+          [32m+[0m[0m types            = [
+              [32m+[0m[0m "REGIONAL",
+            ]
+          [32m+[0m[0m vpc_endpoint_ids = (known after apply)
+        }
+    }
+
+[1m  # module.networking.aws_api_gateway_stage.main[0m will be created
+[0m  [32m+[0m[0m resource "aws_api_gateway_stage" "main" {
+      [32m+[0m[0m arn                  = (known after apply)
+      [32m+[0m[0m deployment_id        = (known after apply)
+      [32m+[0m[0m execution_arn        = (known after apply)
+      [32m+[0m[0m id                   = (known after apply)
+      [32m+[0m[0m invoke_url           = (known after apply)
+      [32m+[0m[0m rest_api_id          = (known after apply)
+      [32m+[0m[0m stage_name           = "dev"
+      [32m+[0m[0m tags                 = {
+          [32m+[0m[0m "Compliance"  = "pci-dss"
+          [32m+[0m[0m "CostCenter"  = "engineering"
+          [32m+[0m[0m "Environment" = "dev"
+          [32m+[0m[0m "ManagedBy"   = "terraform"
+          [32m+[0m[0m "Owner"       = "platform-team"
+          [32m+[0m[0m "Project"     = "serverless-api"
+          [32m+[0m[0m "Version"     = "1.0.0"
+        }
+      [32m+[0m[0m tags_all             = {
+          [32m+[0m[0m "Compliance"  = "pci-dss"
+          [32m+[0m[0m "CostCenter"  = "engineering"
+          [32m+[0m[0m "Environment" = "dev"
+          [32m+[0m[0m "ManagedBy"   = "terraform"
+          [32m+[0m[0m "Owner"       = "platform-team"
+          [32m+[0m[0m "Project"     = "serverless-api"
+          [32m+[0m[0m "Version"     = "1.0.0"
+        }
+      [32m+[0m[0m web_acl_arn          = (known after apply)
+      [32m+[0m[0m xray_tracing_enabled = false
+
+      [32m+[0m[0m access_log_settings {
+          [32m+[0m[0m destination_arn = (known after apply)
+          [32m+[0m[0m format          = jsonencode(
+                {
+                  [32m+[0m[0m caller         = "$context.identity.caller"
+                  [32m+[0m[0m httpMethod     = "$context.httpMethod"
+                  [32m+[0m[0m ip             = "$context.identity.sourceIp"
+                  [32m+[0m[0m protocol       = "$context.protocol"
+                  [32m+[0m[0m requestId      = "$context.requestId"
+                  [32m+[0m[0m requestTime    = "$context.requestTime"
+                  [32m+[0m[0m resourcePath   = "$context.resourcePath"
+                  [32m+[0m[0m responseLength = "$context.responseLength"
+                  [32m+[0m[0m status         = "$context.status"
+                  [32m+[0m[0m user           = "$context.identity.user"
+                }
+            )
+        }
+    }
+
+[1m  # module.networking.aws_api_gateway_usage_plan.plans["basic"][0m will be created
+[0m  [32m+[0m[0m resource "aws_api_gateway_usage_plan" "plans" {
+      [32m+[0m[0m arn         = (known after apply)
+      [32m+[0m[0m description = "Usage plan for basic tier"
+      [32m+[0m[0m id          = (known after apply)
+      [32m+[0m[0m name        = "serverless-api-dev-basic"
+      [32m+[0m[0m tags        = {
+          [32m+[0m[0m "Compliance"  = "pci-dss"
+          [32m+[0m[0m "CostCenter"  = "engineering"
+          [32m+[0m[0m "Environment" = "dev"
+          [32m+[0m[0m "ManagedBy"   = "terraform"
+          [32m+[0m[0m "Owner"       = "platform-team"
+          [32m+[0m[0m "Project"     = "serverless-api"
+          [32m+[0m[0m "Version"     = "1.0.0"
+        }
+      [32m+[0m[0m tags_all    = {
+          [32m+[0m[0m "Compliance"  = "pci-dss"
+          [32m+[0m[0m "CostCenter"  = "engineering"
+          [32m+[0m[0m "Environment" = "dev"
+          [32m+[0m[0m "ManagedBy"   = "terraform"
+          [32m+[0m[0m "Owner"       = "platform-team"
+          [32m+[0m[0m "Project"     = "serverless-api"
+          [32m+[0m[0m "Version"     = "1.0.0"
+        }
+
+      [32m+[0m[0m api_stages {
+          [32m+[0m[0m api_id = (known after apply)
+          [32m+[0m[0m stage  = "dev"
+        }
+
+      [32m+[0m[0m quota_settings {
+          [32m+[0m[0m limit  = 1000
+          [32m+[0m[0m offset = 0
+          [32m+[0m[0m period = "DAY"
+        }
+
+      [32m+[0m[0m throttle_settings {
+          [32m+[0m[0m burst_limit = 40
+          [32m+[0m[0m rate_limit  = 20
+        }
+    }
+
+[1m  # module.networking.aws_api_gateway_usage_plan.plans["free"][0m will be created
+[0m  [32m+[0m[0m resource "aws_api_gateway_usage_plan" "plans" {
+      [32m+[0m[0m arn         = (known after apply)
+      [32m+[0m[0m description = "Usage plan for free tier"
+      [32m+[0m[0m id          = (known after apply)
+      [32m+[0m[0m name        = "serverless-api-dev-free"
+      [32m+[0m[0m tags        = {
+          [32m+[0m[0m "Compliance"  = "pci-dss"
+          [32m+[0m[0m "CostCenter"  = "engineering"
+          [32m+[0m[0m "Environment" = "dev"
+          [32m+[0m[0m "ManagedBy"   = "terraform"
+          [32m+[0m[0m "Owner"       = "platform-team"
+          [32m+[0m[0m "Project"     = "serverless-api"
+          [32m+[0m[0m "Version"     = "1.0.0"
+        }
+      [32m+[0m[0m tags_all    = {
+          [32m+[0m[0m "Compliance"  = "pci-dss"
+          [32m+[0m[0m "CostCenter"  = "engineering"
+          [32m+[0m[0m "Environment" = "dev"
+          [32m+[0m[0m "ManagedBy"   = "terraform"
+          [32m+[0m[0m "Owner"       = "platform-team"
+          [32m+[0m[0m "Project"     = "serverless-api"
+          [32m+[0m[0m "Version"     = "1.0.0"
+        }
+
+      [32m+[0m[0m api_stages {
+          [32m+[0m[0m api_id = (known after apply)
+          [32m+[0m[0m stage  = "dev"
+        }
+
+      [32m+[0m[0m quota_settings {
+          [32m+[0m[0m limit  = 100
+          [32m+[0m[0m offset = 0
+          [32m+[0m[0m period = "DAY"
+        }
+
+      [32m+[0m[0m throttle_settings {
+          [32m+[0m[0m burst_limit = 10
+          [32m+[0m[0m rate_limit  = 5
+        }
+    }
+
+[1m  # module.networking.aws_api_gateway_usage_plan_key.plan_keys["basic"][0m will be created
+[0m  [32m+[0m[0m resource "aws_api_gateway_usage_plan_key" "plan_keys" {
+      [32m+[0m[0m id            = (known after apply)
+      [32m+[0m[0m key_id        = (known after apply)
+      [32m+[0m[0m key_type      = "API_KEY"
+      [32m+[0m[0m name          = (known after apply)
+      [32m+[0m[0m usage_plan_id = (known after apply)
+      [32m+[0m[0m value         = (known after apply)
+    }
+
+[1m  # module.networking.aws_api_gateway_usage_plan_key.plan_keys["free"][0m will be created
+[0m  [32m+[0m[0m resource "aws_api_gateway_usage_plan_key" "plan_keys" {
+      [32m+[0m[0m id            = (known after apply)
+      [32m+[0m[0m key_id        = (known after apply)
+      [32m+[0m[0m key_type      = "API_KEY"
+      [32m+[0m[0m name          = (known after apply)
+      [32m+[0m[0m usage_plan_id = (known after apply)
+      [32m+[0m[0m value         = (known after apply)
+    }
+
+[1m  # module.networking.aws_cloudfront_distribution.api_cdn[0m will be created
+[0m  [32m+[0m[0m resource "aws_cloudfront_distribution" "api_cdn" {
+      [32m+[0m[0m arn                             = (known after apply)
+      [32m+[0m[0m caller_reference                = (known after apply)
+      [32m+[0m[0m comment                         = "serverless-api-dev API CDN"
+      [32m+[0m[0m continuous_deployment_policy_id = (known after apply)
+      [32m+[0m[0m domain_name                     = (known after apply)
+      [32m+[0m[0m enabled                         = true
+      [32m+[0m[0m etag                            = (known after apply)
+      [32m+[0m[0m hosted_zone_id                  = (known after apply)
+      [32m+[0m[0m http_version                    = "http2"
+      [32m+[0m[0m id                              = (known after apply)
+      [32m+[0m[0m in_progress_validation_batches  = (known after apply)
+      [32m+[0m[0m is_ipv6_enabled                 = true
+      [32m+[0m[0m last_modified_time              = (known after apply)
+      [32m+[0m[0m price_class                     = "PriceClass_200"
+      [32m+[0m[0m retain_on_delete                = false
+      [32m+[0m[0m staging                         = false
+      [32m+[0m[0m status                          = (known after apply)
+      [32m+[0m[0m tags                            = {
+          [32m+[0m[0m "Compliance"  = "pci-dss"
+          [32m+[0m[0m "CostCenter"  = "engineering"
+          [32m+[0m[0m "Environment" = "dev"
+          [32m+[0m[0m "ManagedBy"   = "terraform"
+          [32m+[0m[0m "Owner"       = "platform-team"
+          [32m+[0m[0m "Project"     = "serverless-api"
+          [32m+[0m[0m "Version"     = "1.0.0"
+        }
+      [32m+[0m[0m tags_all                        = {
+          [32m+[0m[0m "Compliance"  = "pci-dss"
+          [32m+[0m[0m "CostCenter"  = "engineering"
+          [32m+[0m[0m "Environment" = "dev"
+          [32m+[0m[0m "ManagedBy"   = "terraform"
+          [32m+[0m[0m "Owner"       = "platform-team"
+          [32m+[0m[0m "Project"     = "serverless-api"
+          [32m+[0m[0m "Version"     = "1.0.0"
+        }
+      [32m+[0m[0m trusted_key_groups              = (known after apply)
+      [32m+[0m[0m trusted_signers                 = (known after apply)
+      [32m+[0m[0m wait_for_deployment             = true
+        [90m# (1 unchanged attribute hidden)[0m[0m
+
+      [32m+[0m[0m default_cache_behavior {
+          [32m+[0m[0m allowed_methods        = [
+              [32m+[0m[0m "DELETE",
+              [32m+[0m[0m "GET",
+              [32m+[0m[0m "HEAD",
+              [32m+[0m[0m "OPTIONS",
+              [32m+[0m[0m "PATCH",
+              [32m+[0m[0m "POST",
+              [32m+[0m[0m "PUT",
+            ]
+          [32m+[0m[0m cached_methods         = [
+              [32m+[0m[0m "GET",
+              [32m+[0m[0m "HEAD",
+              [32m+[0m[0m "OPTIONS",
+            ]
+          [32m+[0m[0m compress               = true
+          [32m+[0m[0m default_ttl            = 0
+          [32m+[0m[0m max_ttl                = 86400
+          [32m+[0m[0m min_ttl                = 0
+          [32m+[0m[0m target_origin_id       = "api-gateway-dev"
+          [32m+[0m[0m trusted_key_groups     = (known after apply)
+          [32m+[0m[0m trusted_signers        = (known after apply)
+          [32m+[0m[0m viewer_protocol_policy = "redirect-to-https"
+
+          [32m+[0m[0m forwarded_values {
+              [32m+[0m[0m headers                 = [
+                  [32m+[0m[0m "Accept",
+                  [32m+[0m[0m "Authorization",
+                  [32m+[0m[0m "Content-Type",
+                  [32m+[0m[0m "Origin",
+                ]
+              [32m+[0m[0m query_string            = true
+              [32m+[0m[0m query_string_cache_keys = (known after apply)
+
+              [32m+[0m[0m cookies {
+                  [32m+[0m[0m forward           = "all"
+                  [32m+[0m[0m whitelisted_names = (known after apply)
+                }
+            }
+        }
+
+      [32m+[0m[0m origin {
+          [32m+[0m[0m connection_attempts      = 3
+          [32m+[0m[0m connection_timeout       = 10
+          [32m+[0m[0m domain_name              = (known after apply)
+          [32m+[0m[0m origin_id                = "api-gateway-dev"
+          [32m+[0m[0m origin_path              = "/dev"
+            [90m# (1 unchanged attribute hidden)[0m[0m
+
+          [32m+[0m[0m custom_origin_config {
+              [32m+[0m[0m http_port                = 80
+              [32m+[0m[0m https_port               = 443
+              [32m+[0m[0m origin_keepalive_timeout = 5
+              [32m+[0m[0m origin_protocol_policy   = "https-only"
+              [32m+[0m[0m origin_read_timeout      = 30
+              [32m+[0m[0m origin_ssl_protocols     = [
+                  [32m+[0m[0m "TLSv1.2",
+                ]
+            }
+        }
+
+      [32m+[0m[0m restrictions {
+          [32m+[0m[0m geo_restriction {
+              [32m+[0m[0m locations        = (known after apply)
+              [32m+[0m[0m restriction_type = "none"
+            }
+        }
+
+      [32m+[0m[0m viewer_certificate {
+          [32m+[0m[0m cloudfront_default_certificate = true
+          [32m+[0m[0m minimum_protocol_version       = "TLSv1.2_2021"
+            [90m# (1 unchanged attribute hidden)[0m[0m
+        }
+    }
+
+[1m  # module.networking.aws_cloudwatch_log_group.api_gateway[0m will be created
+[0m  [32m+[0m[0m resource "aws_cloudwatch_log_group" "api_gateway" {
+      [32m+[0m[0m arn               = (known after apply)
+      [32m+[0m[0m id                = (known after apply)
+      [32m+[0m[0m kms_key_id        = (known after apply)
+      [32m+[0m[0m log_group_class   = (known after apply)
+      [32m+[0m[0m name              = "/aws/apigateway/serverless-api-dev"
+      [32m+[0m[0m name_prefix       = (known after apply)
+      [32m+[0m[0m retention_in_days = 7
+      [32m+[0m[0m skip_destroy      = false
+      [32m+[0m[0m tags              = {
+          [32m+[0m[0m "Compliance"  = "pci-dss"
+          [32m+[0m[0m "CostCenter"  = "engineering"
+          [32m+[0m[0m "Environment" = "dev"
+          [32m+[0m[0m "ManagedBy"   = "terraform"
+          [32m+[0m[0m "Owner"       = "platform-team"
+          [32m+[0m[0m "Project"     = "serverless-api"
+          [32m+[0m[0m "Version"     = "1.0.0"
+        }
+      [32m+[0m[0m tags_all          = {
+          [32m+[0m[0m "Compliance"  = "pci-dss"
+          [32m+[0m[0m "CostCenter"  = "engineering"
+          [32m+[0m[0m "Environment" = "dev"
+          [32m+[0m[0m "ManagedBy"   = "terraform"
+          [32m+[0m[0m "Owner"       = "platform-team"
+          [32m+[0m[0m "Project"     = "serverless-api"
+          [32m+[0m[0m "Version"     = "1.0.0"
+        }
+    }
+
+[1m  # module.networking.aws_kms_alias.logs[0m will be created
+[0m  [32m+[0m[0m resource "aws_kms_alias" "logs" {
+      [32m+[0m[0m arn            = (known after apply)
+      [32m+[0m[0m id             = (known after apply)
+      [32m+[0m[0m name           = "alias/serverless-api-dev-api-logs"
+      [32m+[0m[0m name_prefix    = (known after apply)
+      [32m+[0m[0m target_key_arn = (known after apply)
+      [32m+[0m[0m target_key_id  = (known after apply)
+    }
+
+[1m  # module.networking.aws_kms_key.logs[0m will be created
+[0m  [32m+[0m[0m resource "aws_kms_key" "logs" {
+      [32m+[0m[0m arn                                = (known after apply)
+      [32m+[0m[0m bypass_policy_lockout_safety_check = false
+      [32m+[0m[0m customer_master_key_spec           = "SYMMETRIC_DEFAULT"
+      [32m+[0m[0m deletion_window_in_days            = 10
+      [32m+[0m[0m description                        = "KMS key for API Gateway logs encryption"
+      [32m+[0m[0m enable_key_rotation                = true
+      [32m+[0m[0m id                                 = (known after apply)
+      [32m+[0m[0m is_enabled                         = true
+      [32m+[0m[0m key_id                             = (known after apply)
+      [32m+[0m[0m key_usage                          = "ENCRYPT_DECRYPT"
+      [32m+[0m[0m multi_region                       = (known after apply)
+      [32m+[0m[0m policy                             = (known after apply)
+      [32m+[0m[0m tags                               = {
+          [32m+[0m[0m "Compliance"  = "pci-dss"
+          [32m+[0m[0m "CostCenter"  = "engineering"
+          [32m+[0m[0m "Environment" = "dev"
+          [32m+[0m[0m "ManagedBy"   = "terraform"
+          [32m+[0m[0m "Owner"       = "platform-team"
+          [32m+[0m[0m "Project"     = "serverless-api"
+          [32m+[0m[0m "Version"     = "1.0.0"
+        }
+      [32m+[0m[0m tags_all                           = {
+          [32m+[0m[0m "Compliance"  = "pci-dss"
+          [32m+[0m[0m "CostCenter"  = "engineering"
+          [32m+[0m[0m "Environment" = "dev"
+          [32m+[0m[0m "ManagedBy"   = "terraform"
+          [32m+[0m[0m "Owner"       = "platform-team"
+          [32m+[0m[0m "Project"     = "serverless-api"
+          [32m+[0m[0m "Version"     = "1.0.0"
+        }
+    }
+
+[1m  # module.security.aws_cognito_user_pool.main[0m will be created
+[0m  [32m+[0m[0m resource "aws_cognito_user_pool" "main" {
+      [32m+[0m[0m arn                        = (known after apply)
+      [32m+[0m[0m auto_verified_attributes   = [
+          [32m+[0m[0m "email",
+        ]
+      [32m+[0m[0m creation_date              = (known after apply)
+      [32m+[0m[0m custom_domain              = (known after apply)
+      [32m+[0m[0m deletion_protection        = "INACTIVE"
+      [32m+[0m[0m domain                     = (known after apply)
+      [32m+[0m[0m email_verification_message = (known after apply)
+      [32m+[0m[0m email_verification_subject = (known after apply)
+      [32m+[0m[0m endpoint                   = (known after apply)
+      [32m+[0m[0m estimated_number_of_users  = (known after apply)
+      [32m+[0m[0m id                         = (known after apply)
+      [32m+[0m[0m last_modified_date         = (known after apply)
+      [32m+[0m[0m mfa_configuration          = "OFF"
+      [32m+[0m[0m name                       = "serverless-api-dev-users"
+      [32m+[0m[0m sms_verification_message   = (known after apply)
+      [32m+[0m[0m tags                       = {
+          [32m+[0m[0m "Compliance"  = "pci-dss"
+          [32m+[0m[0m "CostCenter"  = "engineering"
+          [32m+[0m[0m "Environment" = "dev"
+          [32m+[0m[0m "ManagedBy"   = "terraform"
+          [32m+[0m[0m "Owner"       = "platform-team"
+          [32m+[0m[0m "Project"     = "serverless-api"
+          [32m+[0m[0m "Version"     = "1.0.0"
+        }
+      [32m+[0m[0m tags_all                   = {
+          [32m+[0m[0m "Compliance"  = "pci-dss"
+          [32m+[0m[0m "CostCenter"  = "engineering"
+          [32m+[0m[0m "Environment" = "dev"
+          [32m+[0m[0m "ManagedBy"   = "terraform"
+          [32m+[0m[0m "Owner"       = "platform-team"
+          [32m+[0m[0m "Project"     = "serverless-api"
+          [32m+[0m[0m "Version"     = "1.0.0"
+        }
+      [32m+[0m[0m username_attributes        = [
+          [32m+[0m[0m "email",
+        ]
+
+      [32m+[0m[0m account_recovery_setting {
+          [32m+[0m[0m recovery_mechanism {
+              [32m+[0m[0m name     = "verified_email"
+              [32m+[0m[0m priority = 1
+            }
+        }
+
+      [32m+[0m[0m admin_create_user_config (known after apply)
+
+      [32m+[0m[0m password_policy {
+          [32m+[0m[0m minimum_length    = 12
+          [32m+[0m[0m require_lowercase = true
+          [32m+[0m[0m require_numbers   = true
+          [32m+[0m[0m require_symbols   = true
+          [32m+[0m[0m require_uppercase = true
+        }
+
+      [32m+[0m[0m schema {
+          [32m+[0m[0m attribute_data_type = "String"
+          [32m+[0m[0m mutable             = false
+          [32m+[0m[0m name                = "email"
+          [32m+[0m[0m required            = true
+        }
+      [32m+[0m[0m schema {
+          [32m+[0m[0m attribute_data_type = "String"
+          [32m+[0m[0m mutable             = false
+          [32m+[0m[0m name                = "tenant_id"
+        }
+      [32m+[0m[0m schema {
+          [32m+[0m[0m attribute_data_type = "String"
+          [32m+[0m[0m mutable             = true
+          [32m+[0m[0m name                = "plan_type"
+        }
+
+      [32m+[0m[0m sms_configuration (known after apply)
+
+      [32m+[0m[0m software_token_mfa_configuration {
+          [32m+[0m[0m enabled = false
+        }
+
+      [32m+[0m[0m user_attribute_update_settings {
+          [32m+[0m[0m attributes_require_verification_before_update = [
+              [32m+[0m[0m "email",
+            ]
+        }
+
+      [32m+[0m[0m verification_message_template (known after apply)
+    }
+
+[1m  # module.security.aws_cognito_user_pool_client.api[0m will be created
+[0m  [32m+[0m[0m resource "aws_cognito_user_pool_client" "api" {
+      [32m+[0m[0m access_token_validity                         = 1
+      [32m+[0m[0m allowed_oauth_flows                           = (known after apply)
+      [32m+[0m[0m allowed_oauth_flows_user_pool_client          = (known after apply)
+      [32m+[0m[0m allowed_oauth_scopes                          = (known after apply)
+      [32m+[0m[0m auth_session_validity                         = (known after apply)
+      [32m+[0m[0m callback_urls                                 = (known after apply)
+      [32m+[0m[0m client_secret                                 = (sensitive value)
+      [32m+[0m[0m default_redirect_uri                          = (known after apply)
+      [32m+[0m[0m enable_propagate_additional_user_context_data = (known after apply)
+      [32m+[0m[0m enable_token_revocation                       = (known after apply)
+      [32m+[0m[0m explicit_auth_flows                           = [
+          [32m+[0m[0m "ALLOW_REFRESH_TOKEN_AUTH",
+          [32m+[0m[0m "ALLOW_USER_PASSWORD_AUTH",
+          [32m+[0m[0m "ALLOW_USER_SRP_AUTH",
+        ]
+      [32m+[0m[0m generate_secret                               = true
+      [32m+[0m[0m id                                            = (known after apply)
+      [32m+[0m[0m id_token_validity                             = 1
+      [32m+[0m[0m logout_urls                                   = (known after apply)
+      [32m+[0m[0m name                                          = "serverless-api-dev-api-client"
+      [32m+[0m[0m prevent_user_existence_errors                 = "ENABLED"
+      [32m+[0m[0m read_attributes                               = (known after apply)
+      [32m+[0m[0m refresh_token_validity                        = 30
+      [32m+[0m[0m supported_identity_providers                  = (known after apply)
+      [32m+[0m[0m user_pool_id                                  = (known after apply)
+      [32m+[0m[0m write_attributes                              = (known after apply)
+
+      [32m+[0m[0m token_validity_units {
+          [32m+[0m[0m access_token  = "hours"
+          [32m+[0m[0m id_token      = "hours"
+          [32m+[0m[0m refresh_token = "days"
+        }
+    }
+
+[1m  # module.security.aws_iam_role.api_authorizer[0m will be created
+[0m  [32m+[0m[0m resource "aws_iam_role" "api_authorizer" {
+      [32m+[0m[0m arn                   = (known after apply)
+      [32m+[0m[0m assume_role_policy    = jsonencode(
+            {
+              [32m+[0m[0m Statement = [
+                  [32m+[0m[0m {
+                      [32m+[0m[0m Action    = "sts:AssumeRole"
+                      [32m+[0m[0m Effect    = "Allow"
+                      [32m+[0m[0m Principal = {
+                          [32m+[0m[0m Service = "apigateway.amazonaws.com"
+                        }
+                    },
+                ]
+              [32m+[0m[0m Version   = "2012-10-17"
+            }
+        )
+      [32m+[0m[0m create_date           = (known after apply)
+      [32m+[0m[0m force_detach_policies = false
+      [32m+[0m[0m id                    = (known after apply)
+      [32m+[0m[0m managed_policy_arns   = (known after apply)
+      [32m+[0m[0m max_session_duration  = 3600
+      [32m+[0m[0m name                  = "serverless-api-dev-api-authorizer"
+      [32m+[0m[0m name_prefix           = (known after apply)
+      [32m+[0m[0m path                  = "/"
+      [32m+[0m[0m tags                  = {
+          [32m+[0m[0m "Compliance"  = "pci-dss"
+          [32m+[0m[0m "CostCenter"  = "engineering"
+          [32m+[0m[0m "Environment" = "dev"
+          [32m+[0m[0m "ManagedBy"   = "terraform"
+          [32m+[0m[0m "Owner"       = "platform-team"
+          [32m+[0m[0m "Project"     = "serverless-api"
+          [32m+[0m[0m "Version"     = "1.0.0"
+        }
+      [32m+[0m[0m tags_all              = {
+          [32m+[0m[0m "Compliance"  = "pci-dss"
+          [32m+[0m[0m "CostCenter"  = "engineering"
+          [32m+[0m[0m "Environment" = "dev"
+          [32m+[0m[0m "ManagedBy"   = "terraform"
+          [32m+[0m[0m "Owner"       = "platform-team"
+          [32m+[0m[0m "Project"     = "serverless-api"
+          [32m+[0m[0m "Version"     = "1.0.0"
+        }
+      [32m+[0m[0m unique_id             = (known after apply)
+
+      [32m+[0m[0m inline_policy (known after apply)
+    }
+
+[1m  # module.security.aws_kms_alias.main[0m will be created
+[0m  [32m+[0m[0m resource "aws_kms_alias" "main" {
+      [32m+[0m[0m arn            = (known after apply)
+      [32m+[0m[0m id             = (known after apply)
+      [32m+[0m[0m name           = "alias/serverless-api-dev"
+      [32m+[0m[0m name_prefix    = (known after apply)
+      [32m+[0m[0m target_key_arn = (known after apply)
+      [32m+[0m[0m target_key_id  = (known after apply)
+    }
+
+[1m  # module.security.aws_kms_key.main[0m will be created
+[0m  [32m+[0m[0m resource "aws_kms_key" "main" {
+      [32m+[0m[0m arn                                = (known after apply)
+      [32m+[0m[0m bypass_policy_lockout_safety_check = false
+      [32m+[0m[0m customer_master_key_spec           = "SYMMETRIC_DEFAULT"
+      [32m+[0m[0m deletion_window_in_days            = 10
+      [32m+[0m[0m description                        = "KMS key for serverless-api dev"
+      [32m+[0m[0m enable_key_rotation                = true
+      [32m+[0m[0m id                                 = (known after apply)
+      [32m+[0m[0m is_enabled                         = true
+      [32m+[0m[0m key_id                             = (known after apply)
+      [32m+[0m[0m key_usage                          = "ENCRYPT_DECRYPT"
+      [32m+[0m[0m multi_region                       = (known after apply)
+      [32m+[0m[0m policy                             = (known after apply)
+      [32m+[0m[0m tags                               = {
+          [32m+[0m[0m "Compliance"  = "pci-dss"
+          [32m+[0m[0m "CostCenter"  = "engineering"
+          [32m+[0m[0m "Environment" = "dev"
+          [32m+[0m[0m "ManagedBy"   = "terraform"
+          [32m+[0m[0m "Owner"       = "platform-team"
+          [32m+[0m[0m "Project"     = "serverless-api"
+          [32m+[0m[0m "Version"     = "1.0.0"
+        }
+      [32m+[0m[0m tags_all                           = {
+          [32m+[0m[0m "Compliance"  = "pci-dss"
+          [32m+[0m[0m "CostCenter"  = "engineering"
+          [32m+[0m[0m "Environment" = "dev"
+          [32m+[0m[0m "ManagedBy"   = "terraform"
+          [32m+[0m[0m "Owner"       = "platform-team"
+          [32m+[0m[0m "Project"     = "serverless-api"
+          [32m+[0m[0m "Version"     = "1.0.0"
+        }
+    }
+
+[1m  # module.storage.aws_cloudwatch_event_rule.s3_events[0m will be created
+[0m  [32m+[0m[0m resource "aws_cloudwatch_event_rule" "s3_events" {
+      [32m+[0m[0m arn            = (known after apply)
+      [32m+[0m[0m description    = "Capture S3 events for processing"
+      [32m+[0m[0m event_bus_name = "default"
+      [32m+[0m[0m event_pattern  = (known after apply)
+      [32m+[0m[0m id             = (known after apply)
+      [32m+[0m[0m name           = "serverless-api-dev-s3-events"
+      [32m+[0m[0m name_prefix    = (known after apply)
+      [32m+[0m[0m tags           = {
+          [32m+[0m[0m "Compliance"  = "pci-dss"
+          [32m+[0m[0m "CostCenter"  = "engineering"
+          [32m+[0m[0m "Environment" = "dev"
+          [32m+[0m[0m "ManagedBy"   = "terraform"
+          [32m+[0m[0m "Owner"       = "platform-team"
+          [32m+[0m[0m "Project"     = "serverless-api"
+          [32m+[0m[0m "Version"     = "1.0.0"
+        }
+      [32m+[0m[0m tags_all       = {
+          [32m+[0m[0m "Compliance"  = "pci-dss"
+          [32m+[0m[0m "CostCenter"  = "engineering"
+          [32m+[0m[0m "Environment" = "dev"
+          [32m+[0m[0m "ManagedBy"   = "terraform"
+          [32m+[0m[0m "Owner"       = "platform-team"
+          [32m+[0m[0m "Project"     = "serverless-api"
+          [32m+[0m[0m "Version"     = "1.0.0"
+        }
+    }
+
+[1m  # module.storage.aws_cloudwatch_event_target.cloudwatch_logs[0m will be created
+[0m  [32m+[0m[0m resource "aws_cloudwatch_event_target" "cloudwatch_logs" {
+      [32m+[0m[0m arn            = (known after apply)
+      [32m+[0m[0m event_bus_name = "default"
+      [32m+[0m[0m id             = (known after apply)
+      [32m+[0m[0m rule           = "serverless-api-dev-s3-events"
+      [32m+[0m[0m target_id      = "CloudWatchLogGroup"
+    }
+
+[1m  # module.storage.aws_cloudwatch_log_group.events[0m will be created
+[0m  [32m+[0m[0m resource "aws_cloudwatch_log_group" "events" {
+      [32m+[0m[0m arn               = (known after apply)
+      [32m+[0m[0m id                = (known after apply)
+      [32m+[0m[0m log_group_class   = (known after apply)
+      [32m+[0m[0m name              = "/aws/events/serverless-api-dev"
+      [32m+[0m[0m name_prefix       = (known after apply)
+      [32m+[0m[0m retention_in_days = 7
+      [32m+[0m[0m skip_destroy      = false
+      [32m+[0m[0m tags              = {
+          [32m+[0m[0m "Compliance"  = "pci-dss"
+          [32m+[0m[0m "CostCenter"  = "engineering"
+          [32m+[0m[0m "Environment" = "dev"
+          [32m+[0m[0m "ManagedBy"   = "terraform"
+          [32m+[0m[0m "Owner"       = "platform-team"
+          [32m+[0m[0m "Project"     = "serverless-api"
+          [32m+[0m[0m "Version"     = "1.0.0"
+        }
+      [32m+[0m[0m tags_all          = {
+          [32m+[0m[0m "Compliance"  = "pci-dss"
+          [32m+[0m[0m "CostCenter"  = "engineering"
+          [32m+[0m[0m "Environment" = "dev"
+          [32m+[0m[0m "ManagedBy"   = "terraform"
+          [32m+[0m[0m "Owner"       = "platform-team"
+          [32m+[0m[0m "Project"     = "serverless-api"
+          [32m+[0m[0m "Version"     = "1.0.0"
+        }
+    }
+
+[1m  # module.storage.aws_s3_bucket.buckets["documents"][0m will be created
+[0m  [32m+[0m[0m resource "aws_s3_bucket" "buckets" {
+      [32m+[0m[0m acceleration_status         = (known after apply)
+      [32m+[0m[0m acl                         = (known after apply)
+      [32m+[0m[0m arn                         = (known after apply)
+      [32m+[0m[0m bucket                      = "serverless-api-dev-api-documents"
+      [32m+[0m[0m bucket_domain_name          = (known after apply)
+      [32m+[0m[0m bucket_prefix               = (known after apply)
+      [32m+[0m[0m bucket_regional_domain_name = (known after apply)
+      [32m+[0m[0m force_destroy               = false
+      [32m+[0m[0m hosted_zone_id              = (known after apply)
+      [32m+[0m[0m id                          = (known after apply)
+      [32m+[0m[0m object_lock_enabled         = (known after apply)
+      [32m+[0m[0m policy                      = (known after apply)
+      [32m+[0m[0m region                      = (known after apply)
+      [32m+[0m[0m request_payer               = (known after apply)
+      [32m+[0m[0m tags                        = {
+          [32m+[0m[0m "Compliance"  = "pci-dss"
+          [32m+[0m[0m "CostCenter"  = "engineering"
+          [32m+[0m[0m "Environment" = "dev"
+          [32m+[0m[0m "ManagedBy"   = "terraform"
+          [32m+[0m[0m "Name"        = "serverless-api-dev-api-documents"
+          [32m+[0m[0m "Owner"       = "platform-team"
+          [32m+[0m[0m "Project"     = "serverless-api"
+          [32m+[0m[0m "Purpose"     = "api-documents"
+          [32m+[0m[0m "Version"     = "1.0.0"
+        }
+      [32m+[0m[0m tags_all                    = {
+          [32m+[0m[0m "Compliance"  = "pci-dss"
+          [32m+[0m[0m "CostCenter"  = "engineering"
+          [32m+[0m[0m "Environment" = "dev"
+          [32m+[0m[0m "ManagedBy"   = "terraform"
+          [32m+[0m[0m "Name"        = "serverless-api-dev-api-documents"
+          [32m+[0m[0m "Owner"       = "platform-team"
+          [32m+[0m[0m "Project"     = "serverless-api"
+          [32m+[0m[0m "Purpose"     = "api-documents"
+          [32m+[0m[0m "Version"     = "1.0.0"
+        }
+      [32m+[0m[0m website_domain              = (known after apply)
+      [32m+[0m[0m website_endpoint            = (known after apply)
+
+      [32m+[0m[0m cors_rule (known after apply)
+
+      [32m+[0m[0m grant (known after apply)
+
+      [32m+[0m[0m lifecycle_rule (known after apply)
+
+      [32m+[0m[0m logging (known after apply)
+
+      [32m+[0m[0m object_lock_configuration (known after apply)
+
+      [32m+[0m[0m replication_configuration (known after apply)
+
+      [32m+[0m[0m server_side_encryption_configuration (known after apply)
+
+      [32m+[0m[0m versioning (known after apply)
+
+      [32m+[0m[0m website (known after apply)
+    }
+
+[1m  # module.storage.aws_s3_bucket.buckets["logs"][0m will be created
+[0m  [32m+[0m[0m resource "aws_s3_bucket" "buckets" {
+      [32m+[0m[0m acceleration_status         = (known after apply)
+      [32m+[0m[0m acl                         = (known after apply)
+      [32m+[0m[0m arn                         = (known after apply)
+      [32m+[0m[0m bucket                      = "serverless-api-dev-application-logs"
+      [32m+[0m[0m bucket_domain_name          = (known after apply)
+      [32m+[0m[0m bucket_prefix               = (known after apply)
+      [32m+[0m[0m bucket_regional_domain_name = (known after apply)
+      [32m+[0m[0m force_destroy               = false
+      [32m+[0m[0m hosted_zone_id              = (known after apply)
+      [32m+[0m[0m id                          = (known after apply)
+      [32m+[0m[0m object_lock_enabled         = (known after apply)
+      [32m+[0m[0m policy                      = (known after apply)
+      [32m+[0m[0m region                      = (known after apply)
+      [32m+[0m[0m request_payer               = (known after apply)
+      [32m+[0m[0m tags                        = {
+          [32m+[0m[0m "Compliance"  = "pci-dss"
+          [32m+[0m[0m "CostCenter"  = "engineering"
+          [32m+[0m[0m "Environment" = "dev"
+          [32m+[0m[0m "ManagedBy"   = "terraform"
+          [32m+[0m[0m "Name"        = "serverless-api-dev-application-logs"
+          [32m+[0m[0m "Owner"       = "platform-team"
+          [32m+[0m[0m "Project"     = "serverless-api"
+          [32m+[0m[0m "Purpose"     = "application-logs"
+          [32m+[0m[0m "Version"     = "1.0.0"
+        }
+      [32m+[0m[0m tags_all                    = {
+          [32m+[0m[0m "Compliance"  = "pci-dss"
+          [32m+[0m[0m "CostCenter"  = "engineering"
+          [32m+[0m[0m "Environment" = "dev"
+          [32m+[0m[0m "ManagedBy"   = "terraform"
+          [32m+[0m[0m "Name"        = "serverless-api-dev-application-logs"
+          [32m+[0m[0m "Owner"       = "platform-team"
+          [32m+[0m[0m "Project"     = "serverless-api"
+          [32m+[0m[0m "Purpose"     = "application-logs"
+          [32m+[0m[0m "Version"     = "1.0.0"
+        }
+      [32m+[0m[0m website_domain              = (known after apply)
+      [32m+[0m[0m website_endpoint            = (known after apply)
+
+      [32m+[0m[0m cors_rule (known after apply)
+
+      [32m+[0m[0m grant (known after apply)
+
+      [32m+[0m[0m lifecycle_rule (known after apply)
+
+      [32m+[0m[0m logging (known after apply)
+
+      [32m+[0m[0m object_lock_configuration (known after apply)
+
+      [32m+[0m[0m replication_configuration (known after apply)
+
+      [32m+[0m[0m server_side_encryption_configuration (known after apply)
+
+      [32m+[0m[0m versioning (known after apply)
+
+      [32m+[0m[0m website (known after apply)
+    }
+
+[1m  # module.storage.aws_s3_bucket.buckets["uploads"][0m will be created
+[0m  [32m+[0m[0m resource "aws_s3_bucket" "buckets" {
+      [32m+[0m[0m acceleration_status         = (known after apply)
+      [32m+[0m[0m acl                         = (known after apply)
+      [32m+[0m[0m arn                         = (known after apply)
+      [32m+[0m[0m bucket                      = "serverless-api-dev-user-uploads"
+      [32m+[0m[0m bucket_domain_name          = (known after apply)
+      [32m+[0m[0m bucket_prefix               = (known after apply)
+      [32m+[0m[0m bucket_regional_domain_name = (known after apply)
+      [32m+[0m[0m force_destroy               = false
+      [32m+[0m[0m hosted_zone_id              = (known after apply)
+      [32m+[0m[0m id                          = (known after apply)
+      [32m+[0m[0m object_lock_enabled         = (known after apply)
+      [32m+[0m[0m policy                      = (known after apply)
+      [32m+[0m[0m region                      = (known after apply)
+      [32m+[0m[0m request_payer               = (known after apply)
+      [32m+[0m[0m tags                        = {
+          [32m+[0m[0m "Compliance"  = "pci-dss"
+          [32m+[0m[0m "CostCenter"  = "engineering"
+          [32m+[0m[0m "Environment" = "dev"
+          [32m+[0m[0m "ManagedBy"   = "terraform"
+          [32m+[0m[0m "Name"        = "serverless-api-dev-user-uploads"
+          [32m+[0m[0m "Owner"       = "platform-team"
+          [32m+[0m[0m "Project"     = "serverless-api"
+          [32m+[0m[0m "Purpose"     = "user-uploads"
+          [32m+[0m[0m "Version"     = "1.0.0"
+        }
+      [32m+[0m[0m tags_all                    = {
+          [32m+[0m[0m "Compliance"  = "pci-dss"
+          [32m+[0m[0m "CostCenter"  = "engineering"
+          [32m+[0m[0m "Environment" = "dev"
+          [32m+[0m[0m "ManagedBy"   = "terraform"
+          [32m+[0m[0m "Name"        = "serverless-api-dev-user-uploads"
+          [32m+[0m[0m "Owner"       = "platform-team"
+          [32m+[0m[0m "Project"     = "serverless-api"
+          [32m+[0m[0m "Purpose"     = "user-uploads"
+          [32m+[0m[0m "Version"     = "1.0.0"
+        }
+      [32m+[0m[0m website_domain              = (known after apply)
+      [32m+[0m[0m website_endpoint            = (known after apply)
+
+      [32m+[0m[0m cors_rule (known after apply)
+
+      [32m+[0m[0m grant (known after apply)
+
+      [32m+[0m[0m lifecycle_rule (known after apply)
+
+      [32m+[0m[0m logging (known after apply)
+
+      [32m+[0m[0m object_lock_configuration (known after apply)
+
+      [32m+[0m[0m replication_configuration (known after apply)
+
+      [32m+[0m[0m server_side_encryption_configuration (known after apply)
+
+      [32m+[0m[0m versioning (known after apply)
+
+      [32m+[0m[0m website (known after apply)
+    }
+
+[1m  # module.storage.aws_s3_bucket_public_access_block.buckets["documents"][0m will be created
+[0m  [32m+[0m[0m resource "aws_s3_bucket_public_access_block" "buckets" {
+      [32m+[0m[0m block_public_acls       = true
+      [32m+[0m[0m block_public_policy     = true
+      [32m+[0m[0m bucket                  = (known after apply)
+      [32m+[0m[0m id                      = (known after apply)
+      [32m+[0m[0m ignore_public_acls      = true
+      [32m+[0m[0m restrict_public_buckets = true
+    }
+
+[1m  # module.storage.aws_s3_bucket_public_access_block.buckets["logs"][0m will be created
+[0m  [32m+[0m[0m resource "aws_s3_bucket_public_access_block" "buckets" {
+      [32m+[0m[0m block_public_acls       = true
+      [32m+[0m[0m block_public_policy     = true
+      [32m+[0m[0m bucket                  = (known after apply)
+      [32m+[0m[0m id                      = (known after apply)
+      [32m+[0m[0m ignore_public_acls      = true
+      [32m+[0m[0m restrict_public_buckets = true
+    }
+
+[1m  # module.storage.aws_s3_bucket_public_access_block.buckets["uploads"][0m will be created
+[0m  [32m+[0m[0m resource "aws_s3_bucket_public_access_block" "buckets" {
+      [32m+[0m[0m block_public_acls       = true
+      [32m+[0m[0m block_public_policy     = true
+      [32m+[0m[0m bucket                  = (known after apply)
+      [32m+[0m[0m id                      = (known after apply)
+      [32m+[0m[0m ignore_public_acls      = true
+      [32m+[0m[0m restrict_public_buckets = true
+    }
+
+[1m  # module.storage.aws_s3_bucket_server_side_encryption_configuration.buckets["documents"][0m will be created
+[0m  [32m+[0m[0m resource "aws_s3_bucket_server_side_encryption_configuration" "buckets" {
+      [32m+[0m[0m bucket = (known after apply)
+      [32m+[0m[0m id     = (known after apply)
+
+      [32m+[0m[0m rule {
+          [32m+[0m[0m apply_server_side_encryption_by_default {
+              [32m+[0m[0m sse_algorithm     = "AES256"
+                [90m# (1 unchanged attribute hidden)[0m[0m
+            }
+        }
+    }
+
+[1m  # module.storage.aws_s3_bucket_server_side_encryption_configuration.buckets["logs"][0m will be created
+[0m  [32m+[0m[0m resource "aws_s3_bucket_server_side_encryption_configuration" "buckets" {
+      [32m+[0m[0m bucket = (known after apply)
+      [32m+[0m[0m id     = (known after apply)
+
+      [32m+[0m[0m rule {
+          [32m+[0m[0m apply_server_side_encryption_by_default {
+              [32m+[0m[0m sse_algorithm     = "AES256"
+                [90m# (1 unchanged attribute hidden)[0m[0m
+            }
+        }
+    }
+
+[1m  # module.storage.aws_s3_bucket_server_side_encryption_configuration.buckets["uploads"][0m will be created
+[0m  [32m+[0m[0m resource "aws_s3_bucket_server_side_encryption_configuration" "buckets" {
+      [32m+[0m[0m bucket = (known after apply)
+      [32m+[0m[0m id     = (known after apply)
+
+      [32m+[0m[0m rule {
+          [32m+[0m[0m apply_server_side_encryption_by_default {
+              [32m+[0m[0m sse_algorithm     = "AES256"
+                [90m# (1 unchanged attribute hidden)[0m[0m
+            }
+        }
+    }
+
+[1m  # module.storage.aws_s3_bucket_versioning.buckets["documents"][0m will be created
+[0m  [32m+[0m[0m resource "aws_s3_bucket_versioning" "buckets" {
+      [32m+[0m[0m bucket = (known after apply)
+      [32m+[0m[0m id     = (known after apply)
+
+      [32m+[0m[0m versioning_configuration {
+          [32m+[0m[0m mfa_delete = (known after apply)
+          [32m+[0m[0m status     = "Suspended"
+        }
+    }
+
+[1m  # module.storage.aws_s3_bucket_versioning.buckets["logs"][0m will be created
+[0m  [32m+[0m[0m resource "aws_s3_bucket_versioning" "buckets" {
+      [32m+[0m[0m bucket = (known after apply)
+      [32m+[0m[0m id     = (known after apply)
+
+      [32m+[0m[0m versioning_configuration {
+          [32m+[0m[0m mfa_delete = (known after apply)
+          [32m+[0m[0m status     = "Suspended"
+        }
+    }
+
+[1m  # module.storage.aws_s3_bucket_versioning.buckets["uploads"][0m will be created
+[0m  [32m+[0m[0m resource "aws_s3_bucket_versioning" "buckets" {
+      [32m+[0m[0m bucket = (known after apply)
+      [32m+[0m[0m id     = (known after apply)
+
+      [32m+[0m[0m versioning_configuration {
+          [32m+[0m[0m mfa_delete = (known after apply)
+          [32m+[0m[0m status     = "Suspended"
+        }
+    }
+
+[1mPlan:[0m 45 to add, 0 to change, 0 to destroy.
+[0m
+Changes to Outputs:
+  [32m+[0m[0m api_gateway_url          = (known after apply)
+  [32m+[0m[0m api_keys                 = (sensitive value)
+  [32m+[0m[0m cloudfront_domain        = (known after apply)
+  [32m+[0m[0m cognito_client_id        = (sensitive value)
+  [32m+[0m[0m cognito_user_pool_id     = (sensitive value)
+  [32m+[0m[0m environment              = "dev"
+  [32m+[0m[0m monitoring_dashboard_url = "https://console.aws.amazon.com/cloudwatch/home?region=ap-southeast-1#dashboards:name=serverless-api-dev"
+  [32m+[0m[0m regions                  = {
+      [32m+[0m[0m primary   = "ap-southeast-1"
+      [32m+[0m[0m secondary = "ap-southeast-2"
+    }
+  [32m+[0m[0m s3_buckets               = {
+      [32m+[0m[0m documents = (known after apply)
+      [32m+[0m[0m logs      = (known after apply)
+      [32m+[0m[0m uploads   = (known after apply)
+    }
+[31m╷[0m[0m
+[31m│[0m [0m[1m[31mError: [0m[0m[1m1 error occurred:
+[31m│[0m [0m	* all attributes must be indexed. Unused attributes: ["api_key"]
+[31m│[0m [0m
+[31m│[0m [0m[0m
+[31m│[0m [0m
+[31m│[0m [0m[0m  with module.database.aws_dynamodb_table.tables["api_data"],
+[31m│[0m [0m  on modules\database\main.tf line 1, in resource "aws_dynamodb_table" "tables":
+[31m│[0m [0m   1: resource "aws_dynamodb_table" "tables" [4m{[0m[0m
+[31m│[0m [0m
+[31m╵[0m[0m
+[31m╷[0m[0m
+[31m│[0m [0m[1m[31mError: [0m[0m[1mInconsistent conditional result types[0m
+[31m│[0m [0m
+[31m│[0m [0m[0m  on modules\storage\main.tf line 117, in resource "aws_s3_bucket_intelligent_tiering_configuration" "buckets":
+[31m│[0m [0m 117:   for_each = var.environment == "prod" ? local.buckets : [4mtomap({})[0m[0m
+[31m│[0m [0m
+[31m│[0m [0mThe false result value has the wrong type: map has no element for required
+[31m│[0m [0mattribute "documents".
+[31m╵[0m[0m
